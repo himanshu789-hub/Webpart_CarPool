@@ -1,9 +1,10 @@
 define([], function() {
   return {
     "tenantURL": "https://practisebest555.sharepoint.com",
-    "serverRealtiveURL": "/sites/apps",
+    "serverRelativeURL": "/sites/apps",
+    "tenantAPIKey": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IlNzWnNCTmhaY0YzUTlTNHRycFFCVEJ5TlJSSSIsImtpZCI6IlNzWnNCTmhaY0YzUTlTNHRycFFCVEJ5TlJSSSJ9.eyJhdWQiOiIwMDAwMDAwMy0wMDAwLTBmZjEtY2UwMC0wMDAwMDAwMDAwMDAvcHJhY3Rpc2ViZXN0NTU1LnNoYXJlcG9pbnQuY29tQDhkYWQ1YzZhLTQ4ZmUtNGMyYy1hY2Y2LTA0ZmQzZWVmNzg5NyIsImlzcyI6IjAwMDAwMDAxLTAwMDAtMDAwMC1jMDAwLTAwMDAwMDAwMDAwMEA4ZGFkNWM2YS00OGZlLTRjMmMtYWNmNi0wNGZkM2VlZjc4OTciLCJpYXQiOjE1OTM0MDY1ODYsIm5iZiI6MTU5MzQwNjU4NiwiZXhwIjoxNTkzNDkzMjg2LCJpZGVudGl0eXByb3ZpZGVyIjoiMDAwMDAwMDEtMDAwMC0wMDAwLWMwMDAtMDAwMDAwMDAwMDAwQDhkYWQ1YzZhLTQ4ZmUtNGMyYy1hY2Y2LTA0ZmQzZWVmNzg5NyIsIm5hbWVpZCI6ImNhZmFlMTMxLTZmMDQtNGIyYi04YzhjLTc5ZjY1Nzc1N2RhZEA4ZGFkNWM2YS00OGZlLTRjMmMtYWNmNi0wNGZkM2VlZjc4OTciLCJvaWQiOiIzZTQ2YTdhYy1jNmEwLTQ2NWYtYjQxYy1kYmQ3NGQzNWQxODciLCJzdWIiOiIzZTQ2YTdhYy1jNmEwLTQ2NWYtYjQxYy1kYmQ3NGQzNWQxODciLCJ0cnVzdGVkZm9yZGVsZWdhdGlvbiI6ImZhbHNlIn0.s3LUaDKpCZsT0wuQPUZLVfRc4HCAaSKIXmN2wmKGBnXcDxx71Gd27gCWrBV0OxcnhdIOLdJTb25JfTYDXO5jgBv5bllLqdJQrs9jWMd8_7yDHCmbTxjQxqizF8oMTHX87sDOk8wSOD69VdhzQ6HaWyy26VAf3qvZN4GpRGb6K9zLVf9bcpHJNuHAQd3R09Z48lmQOxL7EPq22FvTj0D_84ajb6gj1OewiN-Kbk5iTRvBomBLu91d9Keuojt-xEdUOfw03qgCxqr5-2j90EztZOmXdrai_w4-l6Dn2uHLUx2TFPpoDGwTrkzUSZ6dxZUq6iPBqTH8zElFmppQDwZhBA",
     "BingMaps": {
-      "LocationServiceURL": "http://dev.virtualearth.net/REST/v1/Locations",
+      "LocationServiceURL": "https://dev.virtualearth.net/REST/v1/Locations",
       "DistanceServiceURL": "https://dev.virtualearth.net/REST/v1/Routes/DistanceMatrix",
       "APIKey": "Aq2eQ5lQBt_m1lBEQ5bFbFnP1b27g27lNGxqFCt_gtpXtmoSsEXVWw7aYfUh_Cvf"
     }
