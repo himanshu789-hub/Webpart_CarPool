@@ -1,0 +1,47 @@
+@import '~office-ui-fabric-react/dist/sass/References.scss';
+#display {
+  width: 100%;
+  padding: 80px;
+  display: inline-block;
+}
+
+#bookRide {
+  width: 30%;
+  float: left;
+}
+
+#bookRide>p {
+  background-color: #9319ff;
+  color: white;
+  width: 176px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 19px;
+  /* padding-top: 16px; */
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  padding-top: 8px;
+  height: 42px;
+  /* font-weight: 500;*/
+}
+
+#offerRide {
+  float: left;
+}
+
+#offerRide>p {
+  background-color: #ffac19;
+  color: white;
+  width: 176px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 19px;
+  /* padding-top: 16px; */
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  padding-top: 8px;
+  height: 42px;
+  /* font-weight: 500;*/
+}
