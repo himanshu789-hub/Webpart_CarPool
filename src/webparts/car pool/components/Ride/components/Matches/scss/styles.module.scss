@@ -1,0 +1,19 @@
+#matches {
+  float: left;
+  padding-left: 71px;
+  width: 61%;
+}
+
+#matchesLabel {
+  font-size: 40px;
+  font-weight: 800;
+  color: #9319ff;
+}
+
+#allmatches {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding-top: 104px;
+  width: 100%;
+}
