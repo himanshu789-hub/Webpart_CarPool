@@ -18,3 +18,17 @@ declare module 'BookingResponse'
         DestinationCoords: string;
       }
 }
+declare module 'BookingCountResponse' {
+
+  export interface Value {
+      Id: number;
+      SeatsRequired: number;
+      ID: number;
+  }
+
+  export interface BookingCountResponse {
+      value: Value[];
+  }
+
+}
+

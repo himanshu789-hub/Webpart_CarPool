@@ -9,5 +9,6 @@ export interface IUserService {
     LogIn: (EmailId: string, Password: string, spHttpClient: SPHttpClient) => Promise<IUser>;
     UploadProfileImage(Id: number, FileName: string, file: ArrayBuffer, spHttpClient: SPHttpClient): Promise<string>;
     UpdateProfileImage(Id: number, FileName: string, file: ArrayBuffer, spHttpClient: SPHttpClient): Promise<boolean>;
-    GetCurrentUserLogInId(spHttpClient:SPHttpClient): Promise<number>;
+    GetCurrentUserLogInId(spHttpClient: SPHttpClient): Promise<number>;
+    IsAlreadyExists: (EmailId: string, spHttpClient: SPHttpClient) => Promise<boolean>;
 }

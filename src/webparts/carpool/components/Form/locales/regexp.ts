@@ -1,3 +1,2 @@
-export const NamePattern:RegExp=new RegExp('[^ ][a-zA-Z ]+');
-export const EmailPattern: RegExp = new RegExp('[a-z]+@(.com|.in|.net)');
-export const PasswordPattern: RegExp = new RegExp('[a-zA-Z[0-9]+[!@#$%^&*\(\):;{}\[\]\"\'<>//?]+]{4,6}');
+export const EmailPattern: RegExp = new RegExp('[a-z]+[0-9]+@[a-z]+(.com|.in|.net)');
+export const PasswordPattern: RegExp = new RegExp(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{4,8}$/);

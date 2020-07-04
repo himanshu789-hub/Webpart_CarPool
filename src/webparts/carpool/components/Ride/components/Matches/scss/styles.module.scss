@@ -1,19 +1,25 @@
+@import './../../../../../scss/config';
 #matches {
   float: left;
-  padding-left: 71px;
-  width: 61%;
+  padding-left: 12px;
+  width: 58%;
+  height: 100%;
 }
 
 #matchesLabel {
   font-size: 40px;
   font-weight: 800;
-  color: #9319ff;
+  color: $secondary-color;
 }
 
 #allmatches {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  padding-top: 104px;
+  padding-top: 70px;
   width: 100%;
+  height: 100%;
+  &>div {
+    margin-right: 30px;
+  }
 }

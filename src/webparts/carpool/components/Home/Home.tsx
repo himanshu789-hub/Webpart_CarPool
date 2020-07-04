@@ -14,7 +14,9 @@ import * as styles from './scss/Home.module.scss';
 import Logo from "../Logo/Logo";
 import * as AppSetting from 'AppSettings';
 import NotFound from "../shared/NotFound/NotFound";
-
+import Dashboard from './../Dashboard/Dashboard';
+import { GoToPath } from "../../utilities/utilities";
+import { ConstBookingService } from "../../constant/injection";
 interface TParams  {
   id: string;
   bookingId: string;
@@ -33,16 +35,17 @@ interface IHomeDependenciesProps {
 
 @injectable()
 class Dependencies {
-  @inject("BookingService") public readonly BookingService: IBookingService;
   @inject("UserService") public readonly UserService: IUserService;
-  @inject("OfferService") public readonly OfferService: IOfferService;
+  @inject(ConstBookingService) public readonly BookingService: IBookingService;  
+  @inject("OfferService") public readonly OfferService: IOfferService; 
 }
 interface HomeState {
   DisplayDropDown: boolean;
   Src: string;
   User: IUser;
   IsOnBooking: boolean;
-  IsOnOfferring: boolean;
+  IsOnOffering: boolean;
+  bookOrOfferId: number;
 }
 
 class Home extends React.Component<
@@ -56,43 +59,60 @@ class Home extends React.Component<
       Src: "",
       User: {
         Active: true,
-        Contact: '',
         EMail: '',
         FullName: '',
         Id: 0,
-        Password: '',
-        ProfileImageUrl:''
-      },
+        Password: '',FileName:'',
+        ProfileImageUrl: '',
+        
+      },bookOrOfferId:0,
       IsOnBooking: false,
-      IsOnOfferring: false,
+      IsOnOffering: false,
     };
     this.handleDropDown = this.handleDropDown.bind(this);
   }
+  componentWillReceiveProps(nextProps:IHomeProps) {
+    const path:string = nextProps.location.pathname;
+    const index: number = path.search(/^\/home\/\d+\/dashboard$/i);
+    if (index != -1) {
+      const { BookingService, OfferService,spHttpClient } = this.props;
+      const { match } = nextProps;
+      const {params:{id} } = match;
+      Promise.all([BookingService.IsUnderBooking(parseInt(id), spHttpClient),
+        OfferService.IsUnderOfferring(parseInt(id), spHttpClient)])
+        .then(responses => {
+          if (responses[0])
+            this.setState({ IsOnBooking: true, IsOnOffering: false,bookOrOfferId:responses[0]});       
+          else if (responses[1])
+            this.setState({ IsOnBooking: false, IsOnOffering: true,bookOrOfferId:responses[1] });
+          else
+            this.setState({ IsOnBooking: false, IsOnOffering: false});
+      });
+    }
+  }
   componentDidMount() {
-    const { BookingService, UserService, OfferService, match,spHttpClient } = this.props;
+    const { UserService, match, spHttpClient,  setErrorMessage,BookingService,OfferService } = this.props;
     const { params } = match;
     const { id } = params;
-
-     UserService.GeyUserById(parseInt(id),spHttpClient).then(response => {
-      const User: IUser = {...response};
-      this.setState({ User: { ...User },Src:AppSetting.tenantURL+User.ProfileImageUrl });
+    
+    UserService.GeyUserById(parseInt(id), spHttpClient).then(response => {
+      const User: IUser = { ...response };
+      this.setState({ User: { ...User }, Src: AppSetting.tenantURL + User.ProfileImageUrl });
     }).catch(error => {
-     
+      setErrorMessage(true, (error as Error).message);
     });
 
-    const BookingServiceResponse = BookingService.IsUnderBooking(parseInt(id),spHttpClient);
-    BookingServiceResponse.then(resolve => {
-      if (resolve) this.setState({ IsOnBooking: true });
-    }).catch(() => {
-      
+    Promise.all([BookingService.IsUnderBooking(parseInt(id), spHttpClient),
+      OfferService.IsUnderOfferring(parseInt(id), spHttpClient)])
+      .then(responses => {
+        if (responses[0])
+          this.setState({ IsOnBooking: true, IsOnOffering: false,bookOrOfferId:responses[0]});       
+        else if (responses[1])
+          this.setState({ IsOnBooking: false, IsOnOffering: true,bookOrOfferId:responses[1] });
+        else
+          this.setState({ IsOnBooking: false, IsOnOffering: false});
     });
-    const OfferServiceResponse = OfferService.IsUnderOfferring(parseInt(id),spHttpClient);
-    OfferServiceResponse.then(response => {
-      if (response) this.setState({ IsOnOfferring: true });
-    }).catch(() => {
-      
-    });
-  }
+   }
 
   handleDropDown() {
     this.setState(state => {
@@ -106,7 +126,7 @@ class Home extends React.Component<
     const {
       User: user,
       IsOnBooking: isOnBooking,
-      IsOnOfferring: isOnOfferring,
+      IsOnOffering: isOnOfferring,bookOrOfferId
     } = this.state;
     return (
       <div className={styles.default.container}>
@@ -124,10 +144,10 @@ class Home extends React.Component<
               className={styles.default.profileImage}
             />
             <ul
-              className={styles.default.list+" ".concat(styles.default.dropDown+" ").concat(isOnOfferring?styles.default.makeHeightLess:"")}
+              className={styles.default.list+" ".concat(styles.default.dropDown+" ").concat(styles.default.makeHeightLess)}
             >
               <li>
-                <Link to={url + "/content"}>Home</Link>
+                <Link to={url + "/dashboard"}>Home</Link>
               </li>
               <li>
                 <Link to={"/profile/" + id}>Profile</Link>
@@ -135,13 +155,10 @@ class Home extends React.Component<
               <li>
                 <Link to={url + "/display"}>MyRides</Link>
               </li>
-              {isOnOfferring ? (
                 <li>
                   <Link to={url + "/offerDetails/all"}>Offer Details</Link>
                 </li>
-              ) : (
-                ""
-              )}
+               
               <li>
                 <Link to='/login'>LogOut</Link>
               </li>
@@ -151,33 +168,12 @@ class Home extends React.Component<
         </div>
         <div className={styles.default.content}>
           <Switch>
-          <Route path={this.props.match.path + "/content"}>
-            <div className={styles.default.content_base}>
-              <p>Hey {user.FullName}!</p>
-              <div className={styles.default.content_base_plane}><div
-                className={styles.default.bookingPlane+" ".concat(
-                  isOnBooking || isOnOfferring ?  " "+styles.default.disabled : ""
-                )}
-              >
-                <Link to={this.props.match.url + "/ride/book"}>
-                  Book A Ride
-                </Link>
-              </div>
-              <div
-                className={styles.default.offerPlane.concat(
-                  isOnOfferring || isOnBooking ? " "+styles.default.disabled : ""
-                )}
-              >
-                <Link to={this.props.match.url + "/ride/offer"}>
-                  Offer A Ride
-                </Link>
-              </div>
-                </div>
-              </div>
+          <Route path={[path + "/dashboard",path+'/dashboard/:bookOrOfferId']}  render={(props)=>
+              <Dashboard {...this.props} {...props}  User={user} IsOnOffering={isOnOfferring} IsOnBooking={isOnBooking} bookOrOfferId={bookOrOfferId} />}>
           </Route>
           <Route
             exact
-            path={path + "/ride/book"}
+            path={ path+ "/ride/book"}
             render={props => (
               <Ride {...this.props} isOnBooking={true} isOnUpdate={false} />
             )}
@@ -228,8 +224,8 @@ class Home extends React.Component<
 
 export default connect(Dependencies, (deps, ownProps:IHomeProps) => ({
   BookingService: deps.BookingService,
+  OfferService:deps.OfferService,
   UserService: deps.UserService,
-  OfferService: deps.OfferService,
   history: ownProps.history,
   location: ownProps.location,
   match: ownProps.match,

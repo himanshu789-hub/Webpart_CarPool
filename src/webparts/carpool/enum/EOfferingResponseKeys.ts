@@ -16,5 +16,6 @@ export enum EofferingResponseKeys {
     Time = "Time",
     ViaPointRefsField = "ViaPointRefs",
     DestinationCoords = "DestinationCoords",
-    SourceCoords="SourceCoords"
+    SourceCoords = "SourceCoords",
+    IsRideStarted="IsRideStarted"
 }

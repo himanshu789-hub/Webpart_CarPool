@@ -1,0 +1,75 @@
+@import './../../../scss/config';
+@import './../../../scss/additional_mixin';
+.content_base {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-basis: 1 100%;
+  p {
+    display: block;
+    color: $secondary-text-color;
+    padding-left: 337px;
+    height: 68px;
+    font-weight: bolder;
+    font-size: 35px;
+  }
+  &_plane {
+    width: 100%;
+    display: flex;
+    height: 170px;
+    justify-content: center;
+  }
+}
+
+@mixin box-plane {
+  border-radius: 10px;
+  width: 235px;
+  height: inherit;
+  color: white;
+}
+
+%plane-link-style {
+  @include link-style();
+  font-size: 24px;
+  font-weight: 700;
+  width: 135px;
+  color: $primary-text-color;
+}
+
+.bookingPlane {
+  @include position-base();
+  @include box-plane();
+  background-color: $secondary-color;
+  a {
+    @extend %plane-link-style;
+    @include center-content();
+    @include link-style();
+  }
+}
+
+.bookingDetail {
+  width: 100%;
+  height: 100%;
+  @include position-base();
+  &>div {
+    @include center-content();
+  }
+}
+
+.offerPlane {
+  @include position-base();
+  @include box-plane();
+  background-color: $primary-color;
+  margin-left: 14px;
+  a {
+    @include center-content();
+    @include link-style();
+    @extend %plane-link-style;
+  }
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}

@@ -9,10 +9,16 @@ import { IBooking } from "../interface/IBooking";
 import { IBookingListItem } from "../interface/IBookingListItem";
 import { IVehicle } from "../interface/IVehicle";
 import { IVehicleListItem } from "../interface/IvehicleListItem";
+import { RouteInfoValue } from "RouteInfo";
+import { IOfferRouteAndSeatInfo } from "../interface/IOfferRouteAndSeatInfo";
 
 
 export function StringifyCoordinate(coords: ICoordinateInfo):string {
   return `${coords.Lattitude},${coords.Longitude}`;
+}
+export function ConvertToFormatForSPURL(date: string) {
+  const dateArr = date.split('/');
+  return dateArr[2] + "-" + dateArr[1] + "-" + dateArr[0];
 }
 // Coordinate String Format `lattitude,Longitude`
 export function ParseCoordinate(str: string):ICoordinateInfo {
@@ -57,8 +63,8 @@ export  function IsElmentsInArrayDiscerte(arr: Array<string>){
   return true;
 }
 export const GoToPath = {
-    Home(Id?: number) {
-      return `/home/${Id}/content`;
+    Dashboard(Id: number,BookOrOfferId?:number) {
+      return `/home/${Id}/dashboard${BookOrOfferId?'/'+BookOrOfferId:''}`;
     },
     RideBook(UserId: number, BookingId?: number) {
       return `/home/${UserId}/ride/book${BookingId ? '/update/' + BookingId : ''}`;
@@ -75,8 +81,8 @@ export const GoToPath = {
   Display (Id: number) {
     return `/home/${Id}/display`;
   },
-  OfferDetails(ID?: number) {
-    return `/home/offerdetails${ID ? '/' + ID : ''}`;
+  OfferDetails(ID: number,OfferId?:number) {
+    return `/home/${ID}/offerdetails/${OfferId||'all'}`;
   }
 };
 
@@ -87,7 +93,6 @@ export const MapModelToListItem = ( function() {
   return {
     MapUserToListItem(User: IUser, UserRefId: number):IUserListItem {
       const UserListItem: IUserListItem = {
-        CallbackNumber: User.Contact,
         EMail: User.EMail,
         Password: User.Password,
         SharepointUserId: UserRefId
@@ -119,20 +124,22 @@ export const MapModelToListItem = ( function() {
         VehicleRefId: Offer.VehicleId,
         ViaPointRefsId: [...Offer.ViaPoints.map(e => e.Id)],
         DestinationCoords: StringifyCoordinate(Offer.DestinationCoords),
-        SourceCoords:StringifyCoordinate(Offer.SourceCoords)
+        SourceCoords: StringifyCoordinate(Offer.SourceCoords)
       }
       return OfferListItem;
     },
     MapBookingToListItem(Booking: IBooking): IBookingListItem{
       const BookListItem: IBookingListItem = {
         BookingStatus: Booking.Status,Time:Booking.Time,
-        CommuterRefId: Booking.PassengerRef,
+        CommuterRefId: Booking.CummuterRef,
         DestinationPlace: Booking.Destination,
         FarePrice: Booking.FarePrice,
         SourcePlace: Booking.Source,
         TakerRefId:Booking.PassengerRef,
         DestinationCoords: StringifyCoordinate(Booking.DestinationCoords),
-        SourceCoords:StringifyCoordinate(Booking.SourceCoords)
+        SourceCoords:StringifyCoordinate(Booking.SourceCoords),
+        OData__DCDateCreated: CoonvertStringDateToObject(Booking.DateOfBooking).toISOString(),
+        SeatsRequired:Booking.SeatsRequired
       }
       return BookListItem;
     },
@@ -143,6 +150,15 @@ export const MapModelToListItem = ( function() {
         Vehicle_x0020_Type:Vehicle.Type
       }
       return VehicleListItem;
-    }
+    },
   }
 })();
+
+export const MapToRouteInfo = function MapListItemsToRouteInfoAndSeatsOfferedInstances(Value: RouteInfoValue):IOfferRouteAndSeatInfo {
+
+  return {
+    Id: Value.Id,
+    Route: [Value.SourcePlace, ...Value.ViaPointRefs.map(e => e.Place), Value.DestinationPlace],
+    SeatsOffered:Value.Setas_x0020_Offered
+  }
+}

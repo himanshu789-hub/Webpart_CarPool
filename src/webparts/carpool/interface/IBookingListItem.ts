@@ -10,4 +10,6 @@ export interface IBookingListItem{
     [EBookingResponseKeys.Time]: string;
     [EBookingResponseKeys.DestinationCoords]: string;
     [EBookingResponseKeys.SourceCoords]: string;
+    [EBookingResponseKeys.DateOfBooking]: string;
+    [EBookingResponseKeys.SeatsRequired]: number;
 }

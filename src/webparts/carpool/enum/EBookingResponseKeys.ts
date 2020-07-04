@@ -6,7 +6,8 @@ export enum EBookingResponseKeys {
     FarePrice = "FarePrice",
     Source = "SourcePlace",
     PassengerRef = "TakerRefId",
-    DateOfBooking="_DCDateCreated",Time="Time",
+    DateOfBooking="OData__DCDateCreated",Time="Time",
     DestinationCoords = "DestinationCoords",
-    SourceCoords="SourceCoords"
+    SourceCoords = "SourceCoords",
+    SeatsRequired="SeatsRequired"
 }

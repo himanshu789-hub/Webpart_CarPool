@@ -13,7 +13,7 @@ import { IBookingService } from "../../interface/IBookingService";
 import { IOfferService } from "../../interface/IOfferService";
 import { IUser } from "../../interface/IUser";
 import * as styles from "./scss/styles.module.scss";
-
+import * as AppSettings from 'AppSettings';
 import {SPHttpClient } from '@microsoft/sp-http';
 interface TParams{
   id: string;
@@ -23,7 +23,7 @@ interface IBookCardProps extends RouteComponentProps<TParams> {
   Book: IBooking;
   IsOnUpdate: boolean;
   spHttpClient: SPHttpClient;
-  SetBookRides: Function;
+  SetBookRides?: Function;
 	setErrorMessage: Function;
 }
 interface IBookCardDependenciesProps {
@@ -52,46 +52,69 @@ class BookCard extends React.Component<
     super(props);
     this.state = { Src: "", User: new User() };
     this.handleCancel = this.handleCancel.bind(this);
-    this.handleEdit = this.handleEdit.bind(this);
     this.handleReject = this.handleReject.bind(this);
     this.handleAccept = this.handleAccept.bind(this);
   }
-  handleEdit() {
-    const { history,match } = this.props;
-    const {params:{bookingId,id} } = match
-    history.push(GoToPath.RideBook(parseInt(id),parseInt(bookingId)));
-  }
 
-  handleCancel(event) {
+ async handleCancel(event) {
     const { Book, SetBookRides, BookingService ,spHttpClient} = this.props;
     const value: IBookingStatus = {
       BookingId: Book.Id,
       BookingStatus: BookingStatus.CANCEL,
     };
-    BookingService.UpdateBookingStatus(value,spHttpClient);
+  await  BookingService.UpdateBookingStatus(value,spHttpClient);
     SetBookRides(true);
   }
 
-  handleReject() {
+ async handleReject() {
     const { Book, SetBookRides, BookingService, spHttpClient } = this.props;
     const value: IBookingStatus = {
       BookingId: Book.Id,
       BookingStatus: BookingStatus.REJECTED,
     }
-      BookingService.UpdateBookingStatus(value, spHttpClient);
+     await BookingService.UpdateBookingStatus(value, spHttpClient);
       SetBookRides(false);
   }
   
-  handleAccept() {
-    const { Book, BookingService, SetBookRides,spHttpClient } = this.props;
+ async handleAccept() {
+    const { Book, BookingService, SetBookRides,spHttpClient ,OfferService} = this.props;
+   try {
     const value = {
       BookingId: Book.Id,
       BookingStatus: BookingStatus.ACCEPTED,
     };
-    BookingService.UpdateBookingStatus(value,spHttpClient);
+   const offer = await OfferService.GetById(Book.CummuterRef, spHttpClient);
+     OfferService.Update({ ...offer, TotalEarn: offer.TotalEarn + Book.FarePrice }, spHttpClient);
+   await BookingService.UpdateBookingStatus(value,spHttpClient);
     SetBookRides(false);
+   
+   } catch (e) {
+     
   }
- 
+   }
+  componentWillReceiveProps(nextProps:IBookCardProps) {
+    if (nextProps.Book.PassengerRef != this.props.Book.PassengerRef) {
+      const { UserService,OfferService, spHttpClient,setErrorMessage } = this.props;
+      const { Book ,IsOnUpdate} = nextProps;
+      if (IsOnUpdate) {
+        OfferService.GetById(Book.CummuterRef, spHttpClient)
+          .then(response => {
+          return UserService.GeyUserById(response.UserId, spHttpClient);
+        }).then(response => {
+            this.setState({ User: { ...response }, Src:AppSettings.tenantURL + response.ProfileImageUrl });
+        }).catch(e => {
+          setErrorMessage(true, (e as Error).message);
+        });
+      } else {
+        UserService.GeyUserById(Book.PassengerRef, spHttpClient)
+          .then(response => {
+          this.setState({ User: { ...response }, Src: AppSettings.tenantURL + response.ProfileImageUrl });
+        }).catch(e => {
+          setErrorMessage(true, (e as Error).message);
+        });
+      }
+   }
+ }
   componentDidMount() {
     const {
       IsOnUpdate: isOnUpdate,
@@ -100,21 +123,25 @@ class BookCard extends React.Component<
       UserService,
       spHttpClient,setErrorMessage
     } = this.props;
+    debugger;
     try {
-      if (isOnUpdate) {
-        const GetOfferResponse = OfferService.GetById(Book.PassengerRef,spHttpClient);
-        GetOfferResponse.then(response => {
-          return UserService.GeyUserById(response.Id, spHttpClient);
-        }).then(response => {
-            this.setState({ User: { ...response }, Src: siteURL + response.ProfileImageUrl });
-        });
-        
-      } else {
-        const GetUserResponse = UserService.GeyUserById(Book.PassengerRef,spHttpClient);
-        GetUserResponse.then(response => {
-          this.setState({ User: { ...response }, Src: siteURL + response.ProfileImageUrl });
-        });
-      }    
+      if (Book.PassengerRef)
+      {
+        if (isOnUpdate) {
+          OfferService.GetById(Book.CummuterRef, spHttpClient)
+            .then(response => {
+              return UserService.GeyUserById(response.UserId, spHttpClient);
+            }).then(response => {
+              this.setState({ User: { ...response }, Src: AppSettings.tenantURL + response.ProfileImageUrl });
+            });
+        } else {
+          UserService.GeyUserById(Book.PassengerRef, spHttpClient)
+            .then(response => {
+              this.setState({ User: { ...response }, Src: AppSettings.tenantURL + response.ProfileImageUrl });
+            });
+        }
+      }
+      
     } catch (error) {
       setErrorMessage(true, (error as Error).message);
     }
@@ -124,7 +151,7 @@ class BookCard extends React.Component<
     const { Src: src, User } = this.state;
     const {Source,Destination,FarePrice,Status : BookingSeatStatus,DateOfBooking: DateTimeOfBooking,SeatsRequired} = Book;
     let status = "";
-    debugger;
+
     if (BookingSeatStatus == BookingStatus.REQUESTED)
       status = BookingStatusClassName.Requested;
     else if (BookingSeatStatus == BookingStatus.ACCEPTED)
@@ -138,23 +165,23 @@ class BookCard extends React.Component<
     else if (BookingSeatStatus == BookingStatus.COMPLETED)
       status = BookingStatusClassName.Completed;
     else status = BookingStatusClassName.None;
-
  
+    debugger;
     return (
-      <div className={`${styles.default.bookCard} `.concat(status)} key={Book.Id}>
-        <div id={styles.default.bookHead}>
-          <label>{User.FullName}</label>
+      <div className={`${styles.default.card} `.concat(status)} key={Book.Id}>
+        <div id={styles.default.head}>
+          <label title={User.FullName}>{User.FullName}</label>
           <img src={src} />
         </div>
         <div id={styles.default.section1}>
           <div>
             <p>From</p>
-            <p>{Source}</p>
+            <p title={Source}>{Source}</p>
           </div>
-          <div ><img src={""} /> </div>
+          <div className={styles.default.middleSpace}><img src={""} /> </div>
           <div>
             <p>To</p>
-            <p>{Destination}</p>
+            <p title={Destination}>{Destination}</p>
           </div>
         </div>
         <div id={styles.default.section2}>
@@ -162,7 +189,10 @@ class BookCard extends React.Component<
             <p>Date</p>
             <p>{DateTimeOfBooking}</p>
           </div>
+          <div className={styles.default.middleSpace}> </div>
+          
           <div>
+            <p>Price</p>
             <p>{FarePrice}</p>
           </div>
         </div>
@@ -171,32 +201,31 @@ class BookCard extends React.Component<
             <p >Seats</p>
             <p >{SeatsRequired}</p>
           </div>
-          <div>
+          <div className={styles.default.middleSpace}> </div>
+        
+          <div className={styles.default.editSection}>
             { 
               isOnUpdate ? (status == BookingStatusClassName.Requested ? (
                   <> 
-                  <label className={'delete'} onClick={this.handleCancel}>
-                      <i className='far fa-trash-alt'></i>
-                    </label>
-                    <label className='edit' onClick={this.handleEdit}>
-                    <i className='fa fa-edit'></i>
+                  <label className={styles.default.danger}   onClick={this.handleCancel}>
+                      <i className='fa fa-trash'></i>
                   </label>
                 </>
                   ) : (
-                    ""
+                    <label className={styles.default.status+" ".concat(styles.default.bookingStatus)}>{BookingSeatStatus}</label>
                   )
                   
-              ) : status != BookingStatusClassName.Accepted ? (
+              ) : status == BookingStatusClassName.Requested ? (
                 <>
-                  <label className={styles.default.reject} onClick={this.handleReject}>
+                  <label className={styles.default.danger} onClick={this.handleReject}>
                     <i className='fa fa-times'></i>
                   </label>
-                  <label className={styles.default.accept} onClick={this.handleAccept}>
+                  <label className={styles.default.safe} onClick={this.handleAccept}>
                     <i className='fa fa-check'></i>
                   </label>
                 </>
               ) : (
-                ""
+                    <label className={styles.default.status+" ".concat(styles.default.offerBookingStatus)}>{BookingSeatStatus}</label>
               )}
           </div>
         </div>

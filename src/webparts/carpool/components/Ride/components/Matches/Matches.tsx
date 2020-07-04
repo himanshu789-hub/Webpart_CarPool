@@ -3,34 +3,62 @@ import { IBooking } from "../../../../interface/IBooking";
 import { RouteComponentProps } from "react-router";
 import OfferCard from "../../../OfferCard/OfferCard";
 import { IOffering } from "../../../../interface/IOffering";
+import * as styles from './scss/styles.module.scss';
+import { inject, connect, injectable } from "react-inversify";
+import { IOfferService } from "../../../../interface/IOfferService";
+import { SPHttpClient } from '@microsoft/sp-http';
+import { v4 as uuid } from 'uuid'; 
 
-interface IMatches {
-  Offers: Array<IOffering>;
+interface IMatchesProps extends RouteComponentProps<{}> {
+  Offers:IOffering[];
   Book: IBooking;
+  spHttpClient: SPHttpClient;
+  setErrorMessage: Function;
+}
+interface IMatchesDependenciesProps{
+  OfferService: IOfferService;
+}
+@injectable()
+class Dependencies{
+  @inject("OfferService") public readonly OfferService: IOfferService;
 }
 
-function Matches(props: IMatches) {
-  let { Offers: offers, Book: book } = props;
-  if (offers == null && book == null)
-    return <></>;
-
-  else {
-    const offersRender = offers.map((e, index) => {
+ class Matches extends React.Component<IMatchesProps & IMatchesDependenciesProps, {}> {
+   constructor(props: IMatchesProps & IMatchesDependenciesProps) {
+     super(props);
+   }
+  render()
+   {
+    let { Offers: offers, Book: book } = this.props;
+    if (!offers)
+      return <></>;
+    else if (!offers.length)
+      return <div id={styles.default.matchesLabel}>No Matches Found</div>;
+    else {
       return (
-        <OfferCard {...this.props} BookRequest={book}
-          IsOnUpdate={false}
-          Offer={e}
-        ></OfferCard>
+        <div id={styles.default.matches}>
+          <div id={styles.default.matchesLabel}>Your Matches</div>
+          <div id={styles.default.allmatches}>{ offers.map((e, index) => {
+        return (
+          <OfferCard {...this.props} BookRequest={book} key={uuid()}
+            IsOnUpdate={false}
+            Offer={e} 
+          ></OfferCard>
+        )
+      })}</div>
+        </div>
       );
-    });
-    return (
-      <div id="matches">
-        <div id="matchesLabel">Your Matches</div>
-        <div id="allmatches">{offersRender}</div>
-      </div>
-    );
-
-  }
+  
+    }
+   }
 }
 
-export default Matches;
+export default connect(Dependencies, (depsProps, ownProps: IMatchesProps) => ({
+  Offers: ownProps.Offers,
+  Book: ownProps.Book,
+  OfferService: depsProps.OfferService,
+  spHttpClient: ownProps.spHttpClient,
+  history: ownProps.history,
+  location: ownProps.location,
+  match:ownProps.match
+}))(Matches);

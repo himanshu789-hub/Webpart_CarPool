@@ -10,7 +10,10 @@ export const Discount =  {
 export const VehicleType = {
 	BIKE : 2, HATCHBACK : 4, SEDAN : 5, SUV :6,	
 }
-
+export enum ELocationType {
+	SOURCE = 1,DESTINATION = 2
+}
+export const PlaceHolderImageRelativeUrl: string = '/sites/apps/PublishingImages/placeholder.jpg';
 export const Time:Array<string> = ["5am - 9pm", "9am - 12pm", "12pm - 3pm", "3pm - 6pm", "6pm - 9pm"];
 export const BookingEntitySet:string = "Booking";
 export const OfferEntitySet:string = "Offering";

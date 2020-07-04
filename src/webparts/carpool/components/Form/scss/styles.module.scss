@@ -6,21 +6,6 @@
   padding: 0;
 }
 
-@mixin button() {
-  border-radius: 19px;
-  width: 103px;
-  text-align: center;
-  height: 37px;
-  color: #fff;
-  font-weight: 600;
-  padding: 6px 0;
-  font-size: 17px;
-  box-sizing: border-box;
-  border: none;
-  outline: none;
-  cursor: pointer;
-}
-
 @mixin text-box($element, $lebel-color, $text-color, $width) {
   .#{$element} {
     position: relative;
@@ -72,7 +57,7 @@
 
 .formSection {
   display: flex;
-  height: 550px;
+  height: 600px;
   flex-direction: column;
   align-items: center;
   &>div {
@@ -81,7 +66,7 @@
 }
 
 .error_msg {
-  @include error-text-area(17px, 15px);
+  @include error-text-area(14px, 21px);
 }
 
 .signUp {
@@ -123,6 +108,11 @@
     .msg_password_input_container {
       height: 70px;
       width: 255px;
+      .passwordHolder {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+      }
       @include text-box(input-container,
       gray,
       black,
@@ -140,11 +130,14 @@
         @include error-text-area(14px,
         20px);
       }
-      // .togglePassword {
-      //   width: 20%;
-      //   background: white;
-      //   color: gray;
-      // }
+      .togglePassword {
+        width: 20%;
+        background: white;
+        color: grey;
+        font-size: 36px;
+        text-align: center;
+        display: inline-block;
+      }
     }
     .uploadSection {
       display: flex;
@@ -168,18 +161,20 @@
         padding-top: 92px;
         box-shadow: 4px 3px 4px -1px #9319ff;
         &:after {
-          content: '\f061';
-          font-family: 'Font Awesome 5 Free';
-          font-size: 50px;
-          left: 29px;
-          top: 19px;
+          content: '\f007';
+          font-family: FontAwesome;
+          font-size: 51px;
+          left: 30px;
+          top: 17px;
           position: absolute;
+          color: black;
         }
         img {
           position: absolute;
           width: inherit;
           height: 92px;
           top: 0px;
+          z-index: 6;
         }
       }
     }
@@ -193,6 +188,11 @@
     @include button();
     margin: auto;
   }
+}
+
+.error_center {
+  text-align: center;
+  font-size: 14px;
 }
 
 .updateSection {

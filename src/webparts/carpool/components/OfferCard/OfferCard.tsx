@@ -11,15 +11,19 @@ import { IUser } from "../../interface/IUser";
 import { User } from "../../model/User";
 import {SPHttpClient } from '@microsoft/sp-http';
 import { IUpdateLocationInfo } from "../../interface/IUpdateLocationInfo";
-import { RouteComponentProps } from "react-router";
+import { RouteComponentProps} from "react-router";
 import { GoToPath } from "../../utilities/utilities";
-import { Booking } from "../../model/Booking";
+import * as styles from './scss/styles.module.scss';
+import * as AppSettings from 'AppSettings';
+import { IRouteAndDistanceInfo } from "./locales/interface/IRouteAndDistanceInfo";
+import { BookingStatus } from "../../constant/carpool";
 
 interface IOfferCardProps extends RouteComponentProps<{}>{
   Offer: IOffering;
   IsOnUpdate: boolean;
   spHttpClient: SPHttpClient;
   BookRequest?: IBooking;
+  setErrorMessage: Function;
 }
 
 interface IOfferCardDependenciesProps {
@@ -39,45 +43,76 @@ class Dependencies {
 
 interface IOfferCardState {
   Msg: string;
-  Src: string;
   User: IUser;
+  Src: string;
 }
 class OfferCard extends React.Component<IOfferCardProps & IOfferCardDependenciesProps,IOfferCardState> {
   constructor(props) {
     super(props);
     this.state = {
       Msg: "",
-      Src: "",
       User: new User(),
+      Src:''
     };
     this.handleEdit = this.handleEdit.bind(this);
     this.handleDelete = this.handleDelete.bind(this);
     this.startRide = this.startRide.bind(this);
     this.handleOfferring = this.handleOfferring.bind(this);
   }
-  startRide() {
-    const { Offer, OfferService,spHttpClient,history } = this.props;
+async  startRide() {
+    const { Offer, OfferService,spHttpClient,history,setErrorMessage,BookingService } = this.props;
+    
+  try
+  {
+    const RejectedIds = [...await BookingService.GetIdOfBookingNotAcceptedUntillReachedLocationByOfferId(Offer.Id, Offer.Source, spHttpClient)];
+    Promise.all([...RejectedIds.map((e:number) => BookingService.UpdateBookingStatus({ BookingId: e, BookingStatus: BookingStatus.DESTROYED }, spHttpClient))]).then(responses => {
+      responses.map(e => { e ? '' :  setErrorMessage(true , "Some Booking Are Not Rejected");  });
+    }
+    ).catch(e => {
+      setErrorMessage(true,'Error In Updating Rejected Bookings');
+    });
     const UpdateLocationInfo: IUpdateLocationInfo = {
-  OfferId:Offer.Id,ReachedLocation:Offer.Source
-}
-    OfferService.UpdateLocation(UpdateLocationInfo,spHttpClient).then(res => {
+      OfferId: Offer.Id,
+      ReachedLocation: Offer.Source
+    };
+    await OfferService.StartARide(Offer.Id, spHttpClient);
+    OfferService.UpdateLocation(UpdateLocationInfo, spHttpClient).then(res => {
       const { location:{pathname}} = this.props;
-      history.push(pathname);
+      history.push(GoToPath.OfferDetails(Offer.UserId,Offer.Id));
     });
+  
+  }catch (e) {
+    setErrorMessage(true, (e as Error).message);
   }
-  handleDelete(event) {
-    const { Offer, OfferService, spHttpClient, history} = this.props;
-
-    OfferService.Delete(Offer.Id,spHttpClient).then(res => {
-      if (res) history.push(GoToPath.Display(Offer.Id));
-      else this.setState({ Msg: "Could Not Delete.Please try Again" });
+    }
+ async handleDelete(event) {
+    const {setErrorMessage, Offer, OfferService,BookingService, spHttpClient, history} = this.props;
+   try
+   {
+    const AreThereAnyBooking = await BookingService.GetAllOfferedRidesBooking([Offer.Id], spHttpClient);
+    if (AreThereAnyBooking.length && AreThereAnyBooking.find(e=>e.Status==BookingStatus.ACCEPTED)) {
+      this.setState({ Msg: "You Are Under Service Could Not Delete." });
+      return;
+    }
+    OfferService.Delete(Offer.Id, spHttpClient).then(res => {
+     history.push(GoToPath.Display(Offer.Id));
     });
+   }
+   catch (e) {
+     setErrorMessage(true, (e as Error).message);
+   }
   }
   handleEdit(event) {
     const { history, Offer } = this.props;
-    history.push(GoToPath.OfferDetails(Offer.Id));
+    history.push(GoToPath.OfferDetails(Offer.UserId,Offer.Id));
   }
-
+  componentDidMount() {
+    const { Offer,UserService ,spHttpClient} = this.props;
+    const {UserId} = Offer;
+    UserService.GeyUserById(UserId, spHttpClient).then(res => {
+      this.setState({ User: { ...res },Src:AppSettings.tenantURL+res.ProfileImageUrl });
+    });
+  }
   async handleOfferring(event) {
     const {
       Offer: offer,
@@ -85,106 +120,114 @@ class OfferCard extends React.Component<IOfferCardProps & IOfferCardDependencies
       BookingService,
       spHttpClient
     } = this.props;
-    const {
-      BookRequest: { Destination, Source, DateOfBooking:DateTime, PassengerRef:UserId , SeatsRequired },
-    } = this.props;
-    const {
-      location: { pathname },
-    } = this.props;
-    let book: IBooking = new Booking() ;
-    debugger;
+    const {BookRequest,setErrorMessage} = this.props;
+ 
+    let book: IBooking = { ...BookRequest };
+    // commuter reference  Id
     book.CummuterRef = offer.Id;
-    book.FarePrice = offer.PricePerKM;
-    book.DateOfBooking = DateTime;
-    book.SeatsRequired = SeatsRequired;
-    book.PassengerRef = UserId;
-    BookingService.Create(book,spHttpClient).then(response => {
+    debugger;
+    const RouteAndDistanceInfo: IRouteAndDistanceInfo = {
+      Route: [offer.Source, ...offer.ViaPoints.map(e => e.Place), offer.Destination],
+      PointsDistance: [...offer.ViaPoints.map(e => e.DistanceFromLastPlace), offer.DistanceFromLastPlace]
+    };
+
+    const SourcePointIndex = RouteAndDistanceInfo.Route.indexOf(book.Source);
+    const DestinationPointIndex = RouteAndDistanceInfo.Route.indexOf(book.Destination)-1;
+    let totalDistance:number = 0.00;
+    for (let i = SourcePointIndex; i < DestinationPointIndex; i++){
+      if (i == DestinationPointIndex)
+        totalDistance += offer.DistanceFromLastPlace;
+      else
+        totalDistance += RouteAndDistanceInfo.PointsDistance[i];
+    }
+    //fare price of booking
+    book.Status = BookingStatus.REQUESTED;
+    book.FarePrice = totalDistance * offer.PricePerKM;
+    BookingService.Create(book, spHttpClient).then(response => {
       history.push(GoToPath.Display(book.PassengerRef));
+    }).catch((e) => {
+      setErrorMessage(true, (e as Error).message);
     });
   }
   render() {
     const { IsOnUpdate: isOnUpdate, Offer } = this.props;
-    const { User, Src } = this.state;
-    const {Source,Destination,PricePerKM,StartTime,SeatsOffered : SeatsAvailable,Discount,Id} = Offer;
-    const StartTimeInLocale = new Date(StartTime.toString() + ".000+0000");
-    const OfferringDateTime: string =
-      StartTimeInLocale.getDate() +
-      "/" +
-      StartTimeInLocale.getMonth() +
-      "/" +
-      StartTimeInLocale.getFullYear();
+    const { User,Src} = this.state;
+    const {Source,Destination,PricePerKM,StartTime,SeatsOffered : SeatsAvailable,Discount} = Offer;
+    
+     
     return (
       <div
-        className={"offerCard".concat(
+        className={styles.default.card+" "+" ".concat(
           isOnUpdate
-            ? Offer.Active == true
-              ? " active"
-              : " notActive"
-            : " hovering"
-        )}
+            ? (Offer.Active == true
+              ? styles.default.active+" ".concat(styles.default.makeHeightMore)
+              : styles.default.notActive+" ".concat(styles.default.makeHeightMore)
+            ): styles.default.hovering
+        )}  onClick={this.handleOfferring}
         key={Offer.Id}
       >
-        <div id='offerHead'>
-          <label>{User.FullName}</label>
-          <img src={User.ProfileImageUrl} />
+        <div id={styles.default.head}>
+          <label title={User.FullName}>{User.FullName}</label>
+          <img src={Src} />
         </div>
-        <div id='section1'>
+        <div id={styles.default.section1}>
           <div>
             <p>From</p>
-            <p>{Source}</p>
+            <p title={Source}>{Source}</p>
           </div>
-          <div>
+          <div className={styles.default.middleSpace}>
             <img src={''} />
           </div>
           <div>
             <p>To</p>
-            <p>{Destination}</p>
+            <p title={Destination}>{Destination}</p>
           </div>
         </div>
-        <div id='section2'>
-          <div id='showDate'>
+        <div id={styles.default.section2}>
+          <div>
             <p>Date</p>
-            <p>{OfferringDateTime}</p>
+            <p>{StartTime}</p>
           </div>
-          <div id='price'>
-            <p id='label'>Price</p>
-            <p id='priceContent'>{PricePerKM}</p>
+          <div className={styles.default.middleSpace}></div>
+          <div >
+            <p>Price</p>
+            <p>{PricePerKM}</p>
           </div>
         </div>
-        <div id='section3'>
-          <div id='seats'>
-            <p id='label'>Seats</p>
-            <p id='seatContent'>{SeatsAvailable}</p>
+        <div id={styles.default.section3}>
+          <div >
+            <p >Seats</p>
+            <p >{SeatsAvailable}</p>
           </div>
+          <div >
+            <p >Discount</p>
+            <p >{Discount}</p>
+          </div>
+          
         </div>
         {Offer.Active == true ? (
           isOnUpdate ? (
-            <div id='section4'>
+            <div id={styles.default.section4}>
               {Offer.ReachedLocation!=null ? (
                 <>
-                  <label className='edit' onClick={this.handleEdit}>
+                  <label className={styles.default.safe} onClick={this.handleEdit}>
                     <i className='fa fa-edit'></i>
                   </label>
-                  <span className='canOfferEditmessage'>{this.state.Msg}</span>
-                  <label className='delete' onClick={this.handleDelete}>
-                    <i className='far fa-trash-alt'></i>
+                  <span className={styles.default.msg}>{this.state.Msg}</span>
+                  <label className={styles.default.danger} onClick={this.handleDelete}>
+                    <i className='fa fa-trash'></i>
                   </label>
                 </>
               ) : (
                 <>
-                  <button className='startRide' onClick={this.startRide}>
+                  <button className={styles.default.startRideButton} onClick={this.startRide}>
                     Start Ride
                   </button>
                 </>
               )}
             </div>
           ) : (
-            <div id='section4'>
-              {" "}
-              <label className='selectOffer' onClick={this.handleOfferring}>
-                <i className='fa fa-check'></i>
-              </label>
-            </div>
+            ''
           )
         ) : (
           ""
@@ -194,7 +237,7 @@ class OfferCard extends React.Component<IOfferCardProps & IOfferCardDependencies
   }
 }
 
-export default connect(Dependencies, (deps, ownProps: IOfferCardProps) => ({
+export default (connect(Dependencies, (deps, ownProps: IOfferCardProps) => ({
   BookingService: deps.BookingService,
   UserService: deps.UserService,
   LocationService: deps.LocationService,
@@ -204,4 +247,4 @@ export default connect(Dependencies, (deps, ownProps: IOfferCardProps) => ({
   location: ownProps.location,
   Offer: ownProps.Offer,
   IsOnUpdate: ownProps.IsOnUpdate,
-}))(OfferCard);
+}))(OfferCard));

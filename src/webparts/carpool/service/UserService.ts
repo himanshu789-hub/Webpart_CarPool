@@ -1,7 +1,7 @@
 import { injectable } from 'react-inversify';
 import { IUser } from '../interface/IUser';
 import { IUserService } from '../interface/IUserService';
-import { siteURL, UserEntitySet, ListNames } from '../constant/carpool';
+import { siteURL, UserEntitySet, ListNames, PlaceHolderImageRelativeUrl } from '../constant/carpool';
 import { SelectListInURL, ErrorStatusText } from '../utilities/utilities';
 import { EUserResponseKeys } from '../enum/EUserResponseKeys';
 import { SPHttpClient,SPHttpClientResponse,ISPHttpClientOptions} from '@microsoft/sp-http';
@@ -12,13 +12,32 @@ import * as AppSetting from 'AppSettings';
 import { CurrentUserResponse } from 'CurrentUserResponse';
 @injectable()
 export class UserService implements IUserService {
-   
+    IsAlreadyExists = (EmailId: string, spHttpClient: SPHttpClient): Promise<boolean>=>{
+    const url:string = `${siteURL}/${SelectListInURL(ListNames.UserList)}/items?$select=Id&$filter=(${EUserResponseKeys.EMail} eq '${EmailId}')`
+        const options: ISPHttpClientOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json;odata=nometadata',
+                'Authorization': 'Bearer ' + AppSetting.tenantAPIKey,
+                'odata-version':'3.0'
+            }
+        };
+        return spHttpClient.get(url, SPHttpClient.configurations.v1, options).then(res => {
+            if (!res.ok)
+                throw new Error('Cannot Fetch.' + ErrorStatusText(res.status, res.statusText));
+            return res.json();
+        }).then((response) => {
+            return response.value.length > 0;
+        });
+    }
    public LogIn = (EmailId: string, Password: string, spHttpClient: SPHttpClient): Promise<IUser> => {
-        const url: string = `${siteURL}/${SelectListInURL(UserEntitySet)}?$select=Id,SharepointUser/Title,EMail,RoutingEnabled,Password,AttachmentFiles/FileName,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$expand=SharepointUser$filter=(${EUserResponseKeys.EMail} eq '${EmailId}') and (${EUserResponseKeys.Password} eq '${Password}')`;
+        const url: string = `${siteURL}/${SelectListInURL(UserEntitySet)}/items?$select=Id,SharepointUser/Title,EMail,RoutingEnabled,Password,AttachmentFiles/FileName,AttachmentFiles/ServerRelativeUrl&$expand=AttachmentFiles&$expand=SharepointUser&$filter=(${EUserResponseKeys.Active} eq '1') and (${EUserResponseKeys.EMail} eq '${EmailId}') and (${EUserResponseKeys.Password} eq '${Password}')`;
        const options: ISPHttpClientOptions = {
            headers: {
                'Accept': 'application/json;odata=nometadata',
-               'Authorization': `Bearer ${AppSetting.tenantAPIKey}`
+               'Authorization': `Bearer ${AppSetting.tenantAPIKey}`,
+               'odata-version': '3.0',
+               
            }
        };
       return spHttpClient.get(url, SPHttpClient.configurations.v1,options).then((res: SPHttpClientResponse) => {
@@ -28,17 +47,17 @@ export class UserService implements IUserService {
        }).then((response):IUser => {
            const results:UserListItemResponse = response as UserListItemResponse;
            const arr = results.value;
-           if (arr.length==0)
+           debugger;
+           if (!arr.length)
                return null;
         const user: IUser = {
             Active: arr[0][EUserResponseKeys.Active],
-            Contact: arr[0][EUserResponseKeys.Contact],
             EMail: arr[0][EUserResponseKeys.EMail],
             Id: arr[0][EUserResponseKeys.Id],
-            ProfileImageUrl:arr[0].AttachmentFiles[0].ServerRelativeUrl,
+            ProfileImageUrl:arr[0].AttachmentFiles[0]?arr[0].AttachmentFiles[0].ServerRelativeUrl:PlaceHolderImageRelativeUrl,
             Password: arr[0].Password,
-            FullName:arr[0].SharepointUser.Title
-            
+            FullName: arr[0].SharepointUser.Title,
+            FileName:arr[0].AttachmentFiles[0]?arr[0].AttachmentFiles[0].FileName:null
            };
            return user;
         });
@@ -60,11 +79,11 @@ export class UserService implements IUserService {
             const UserItem: UserValue = response as UserValue;
             const user: IUser = {
                 Active: UserItem[EUserResponseKeys.Active],
-                Contact: UserItem[EUserResponseKeys.Contact],
                 EMail: UserItem[EUserResponseKeys.EMail],
                 Id:UserItem[EUserResponseKeys.Id],
-                ProfileImageUrl:UserItem.AttachmentFiles[0].ServerRelativeUrl,
-                Password:UserItem.Password,FullName:UserItem.SharepointUser.Title
+                ProfileImageUrl:UserItem.AttachmentFiles[0]?UserItem.AttachmentFiles[0].ServerRelativeUrl:PlaceHolderImageRelativeUrl,
+                Password: UserItem.Password, FullName: UserItem.SharepointUser.Title,
+                FileName:UserItem.AttachmentFiles[0]?UserItem.AttachmentFiles[0].FileName:null
             };
             return user;
         });
@@ -94,31 +113,29 @@ export class UserService implements IUserService {
       })
     }
     UpdateProfileImage(Id:number,FileName:string,file:ArrayBuffer,spHttpClient: SPHttpClient):Promise<boolean> {
-        const updateAttachFileUrl: string = `${siteURL}/items('${Id}')/AttachmentFiles('${FileName}')/$value`;
-        return spHttpClient.post(updateAttachFileUrl, SPHttpClient.configurations.v1, {
+        const updateAttachFileUrl: string = `${siteURL}/${SelectListInURL(ListNames.UserList)}/items('${Id}')/AttachmentFiles('${FileName}')/$value`;
+        return spHttpClient.fetch(updateAttachFileUrl, SPHttpClient.configurations.v1, {
             body: file,
             headers: {
-                "X-Http-Method": "MERGE",
                 'Accept': 'application/json;odata=nometadata',
                 'odata-version':'3.0',
-                'Authorization':`Bearer ${AppSetting.tenantAPIKey}`
-            },
-            method:"PATCH"
+                'Authorization': `Bearer ${AppSetting.tenantAPIKey}`,
+                'If-Match':'*'
+            },method:"PUT"
         }).then(res => {
             if (!res.ok)
                 throw new Error("Error On uploading File . . .");
-            if (res.status == 200 || res.status == 204)
-                return true;
-            return false;
+            return true;
         });
     }
     UploadProfileImage(Id: number, FileName: string, file: ArrayBuffer,spHttpClient:SPHttpClient): Promise<string>{
-        const AttachFileUrl: string = `${siteURL}/items('${Id}')/AttachmentFiles/add(FileName='${FileName}',overwrite=true)`;
+        const AttachFileUrl: string = `${siteURL}/${SelectListInURL(ListNames.UserList)}/items('${Id}')/AttachmentFiles/add(FileName='${FileName}')`;
         const options: ISPHttpClientOptions = {
             body: file,
             headers: {
                 'Accept': 'application/json;odata=nometadata',
-                'Authorization':`Bearer ${AppSetting.tenantAPIKey}`
+                'Authorization':`Bearer ${AppSetting.tenantAPIKey}`,
+                'odata-version':'3.0'
             }
         };
         return spHttpClient.post(AttachFileUrl, SPHttpClient.configurations.v1,options).then((res:SPHttpClientResponse) => {
@@ -133,7 +150,6 @@ export class UserService implements IUserService {
     Update = (User: IUser, spHttpClient: SPHttpClient): Promise<boolean> => {
         const url: string = `${siteURL}/${SelectListInURL(UserEntitySet)}/items('${User.Id}')`;
         const UserItem: IUserListItem = {
-            CallbackNumber: User.Contact,
             EMail: User.EMail,
             Password: User.Password
         };
@@ -141,7 +157,12 @@ export class UserService implements IUserService {
             method: "PATCH",
             body: JSON.stringify(UserItem),
             headers: {
-                "X-HTTP-METHOD": "MERGE"
+                "X-HTTP-METHOD": "MERGE", 
+                "If-Match": "*",
+                'Content-Type': 'application/json',
+                'accept': 'application/json;odata=nometadata',
+                'odata-version': '3.0',
+                'Authorization': 'Bearer ' + AppSetting.tenantAPIKey
             }
         };
 
@@ -154,7 +175,6 @@ export class UserService implements IUserService {
     Create = (User: IUser,LoginId:number ,spHttpClient: SPHttpClient): Promise<IUser> => {
         const AddItemUrl: string = `${siteURL}/${SelectListInURL(UserEntitySet)}/items`;
         const UserItem: IUserListItem = {
-            CallbackNumber: User.Contact,
             EMail: User.EMail,
             Password: User.Password,
             SharepointUserId: LoginId
@@ -167,7 +187,9 @@ export class UserService implements IUserService {
             body: JSON.stringify(ActiveUser),
             headers: {
                 'Accept': 'application/json;odata=nometadata',
-                'Authorization':`Bearer ${AppSetting.tenantAPIKey}`
+                'Authorization': `Bearer ${AppSetting.tenantAPIKey}`,
+                'odata-version': '3.0',
+                'Content-Type':'application/json'
             }
         };
         return spHttpClient.post(AddItemUrl, SPHttpClient.configurations.v1, options).then((res: SPHttpClientResponse) => {
@@ -186,10 +208,10 @@ export class UserService implements IUserService {
         const options: ISPHttpClientOptions = {
             headers: {
                 'Accept': 'application/json;odata=nometadata',
-                'Authorization':'Bearer '+AppSetting.tenantAPIKey
-
-         }   
-        }
+                'Authorization': 'Bearer ' + AppSetting.tenantAPIKey,
+                'odata-version': '3.0'
+            }
+        };
         return spHttpClient.get(url, SPHttpClient.configurations.v1, options).then(res => {
             if (!res.ok)
                 throw new Error(ErrorStatusText(res.status, res.statusText));

@@ -19,5 +19,6 @@ export interface IOffering{
     Time: string;
     SourceCoords: ICoordinateInfo;
     DestinationCoords: ICoordinateInfo;
-    getNextLocation(): string;
+    IsRideStarted: boolean;
+    getNextLocation():string;
 }

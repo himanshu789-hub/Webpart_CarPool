@@ -11,10 +11,31 @@
   }
 }
 
+@mixin makeItDisplayEllpsis() {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 @mixin profileImage() {
   width: 50px;
   height: 50px;
   border-radius: 50%;
+}
+
+@mixin button() {
+  border-radius: 19px;
+  width: 103px;
+  text-align: center;
+  height: 37px;
+  color: #fff;
+  font-weight: 600;
+  padding: 6px 0;
+  font-size: 17px;
+  box-sizing: border-box;
+  border: none;
+  outline: none;
+  cursor: pointer;
 }
 
 @mixin position-base() {
@@ -31,4 +52,25 @@
 @mixin link-style() {
   cursor: pointer;
   text-decoration: none;
+}
+
+@keyframes blinkingText {
+  0% {
+    color: initial;
+  }
+  40% {
+    color: transparent;
+  }
+  70% {
+    color: transparent;
+  }
+  100% {
+    color: initial;
+  }
+}
+
+@mixin blinking() {
+  animation-name: blinkingText;
+  animation-duration: infinite;
+  animation-direction: alternate;
 }

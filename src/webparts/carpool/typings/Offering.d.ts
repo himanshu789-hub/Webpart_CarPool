@@ -17,7 +17,8 @@ declare module "OfferingTyping" {
         RideStartTime?: any;
         SourceCoords: string;
         DestinationCoords: string;
-        ID: number;
+         ID: number;
+         IsRideStarted: boolean;
     }
      interface ViaPointRef {
         Id: number;
@@ -30,3 +31,24 @@ declare module "OfferingTyping" {
     }
 }
 
+declare module 'RouteInfo' {
+   
+
+        export interface ViaPointRef {
+            Place: string;
+        }
+    
+        export interface RouteInfoValue{
+            ViaPointRefs: ViaPointRef[];
+            Id: number;
+            SourcePlace: string;
+            DestinationPlace: string;
+            Setas_x0020_Offered: number;
+            ID: number;
+        }
+    
+        export interface RootInfoItems {
+            value: Value[];
+        }
+        
+}

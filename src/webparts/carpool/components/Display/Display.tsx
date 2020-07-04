@@ -47,7 +47,10 @@ class Display extends React.Component<IDisplayProps & IDisplayDependenciesProps,
 			console.log(res);
 			this.setState({ BookRides: [ ...res ] });
 		});
-		const Ids:number[] = await OfferService.GetAllOnlyIdByUserId(parseInt(id), spHttpClient);
+		let Ids: number[] = await OfferService.GetAllOnlyIdByUserId(parseInt(id), true, spHttpClient);
+		Ids = [...Ids, ...await OfferService.GetAllOnlyIdByUserId(parseInt(id), false, spHttpClient)];
+		debugger;
+		if(Ids.length)
 		BookingService.GetAllOfferedRidesBooking(Ids, spHttpClient).then(res => {
 			this.setState({ OfferRidesBooking: [ ...res ] });
 		}).catch(e => {
@@ -65,7 +68,9 @@ class Display extends React.Component<IDisplayProps & IDisplayDependenciesProps,
 		  });
 		}
 		else {
-			const Ids:number[] = await OfferService.GetAllOnlyIdByUserId(parseInt(id), spHttpClient);
+			let Ids: number[] = await OfferService.GetAllOnlyIdByUserId(parseInt(id), true, spHttpClient);
+	     	Ids = [...Ids, ...await OfferService.GetAllOnlyIdByUserId(parseInt(id), false, spHttpClient)];
+		if(Ids.length)
 			BookingService.GetAllOfferedRidesBooking(Ids, spHttpClient).then(res => {
 				this.setState({ OfferRidesBooking: [ ...res ] });
 			}).catch(e => {

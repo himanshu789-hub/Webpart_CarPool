@@ -1,9 +1,9 @@
 /* tslint:disable */
 require("./styles.module.css");
 const styles = {
-  matches: 'matches_a5bbd8ca',
-  matchesLabel: 'matchesLabel_a5bbd8ca',
-  allmatches: 'allmatches_a5bbd8ca'
+  matches: 'matches_30481756',
+  matchesLabel: 'matchesLabel_30481756',
+  allmatches: 'allmatches_30481756'
 };
 
 export default styles;

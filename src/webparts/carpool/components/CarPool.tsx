@@ -38,12 +38,12 @@ export default class CarPool extends React.Component<ICarPoolProps,ICarPoolState
                 <Route path='/home/:id' render={(props) => <Home {...this.props} {...props} setErrorMessage={this.SetErrorMessage}/>}  />
            <Route
               path='/login'
-              render={props => <Form {...this.props } {...props}  IsLogIn={true} />}
+              render={props => <Form {...this.props } {...props}  IsLogIn={true} setErrorMessage={this.SetErrorMessage}/>}
            />
            <Route
               exact
               path={["/", "/profile/:id"]}
-              render={props => <Form {...this.props} {...props} IsLogIn={false} />}
+              render={props => <Form {...this.props} {...props} IsLogIn={false} setErrorMessage={this.SetErrorMessage}/>}
                 />
             <Route path="*" component={NotFound}/> 
            </Switch>

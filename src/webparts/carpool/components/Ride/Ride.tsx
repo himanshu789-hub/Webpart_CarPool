@@ -23,6 +23,7 @@ import {
 	CoonvertStringDateToObject,
 	ValidateDate,
 	IsElmentsInArrayDiscerte,
+	ConvertToFormatForSPURL,
 } from '../../utilities/utilities';
 import { CityPattern, NumberPlatePattern } from './locales/constant';
 import { Vehicle } from '../../model/Vehicle';
@@ -42,11 +43,11 @@ import {
 } from '../../exception/CoordinateException';
 import { ILocationInfo } from '../../interface/ILocationInfo';
 import { CurrentLocation } from '../../module/location.module';
-import { ViaPointService } from '../../service/ViaPointService';
 import { IViaPointService } from '../../interface/IViaPointService';
-import { VehicleService } from '../../service/VehicleService';
 import { IVehicleService } from '../../interface/IVehicleService';
-import { IViaPoint } from '../../interface/IViaPoint';
+import { IOfferRouteAndSeatInfo } from '../../interface/IOfferRouteAndSeatInfo';
+import { EBookingResponseKeys } from '../../enum/EBookingResponseKeys';
+import { IOfferRequestInfo } from '../../interface/IOfferRequestInfo';
 
 interface TParams {
 	id: string;
@@ -100,7 +101,7 @@ interface IRideState {
 	ViaPointResult: Array<JSX.Element>;
 	ToResult: JSX.Element;
 	VehicleInfoMsg: string;
-	matchOffer: Array<IOffering>;
+	matchOffer: IOffering[];
 	Vehicle: IVehicle;
 	DiscreteEndPointMsg: string;
 	DiscreteViaPointMsg: string;
@@ -207,7 +208,6 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 					});
 			}
 		} else {
-			debugger;
 			UserService.GeyUserById(parseInt(id), spHttpClient)
 				.then((response) => {
 					const user: IUser = { ...response };
@@ -216,10 +216,13 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 					});
 				})
 				.catch((error) => {
-					setErrorMessage(true, error.message);
+					setErrorMessage(true, (error as Error).message);
 				});
-			if (isOnBooking) this.setState({ Booking: { ...new Booking() } });
-			else this.setState({ Offer: new Offering() });
+			
+			if (isOnBooking)
+				this.setState({ Booking: { ...new Booking(), PassengerRef: parseInt(id) } });
+			else
+				this.setState({ Offer: new Offering() });
 		}
 	}
 
@@ -267,26 +270,27 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 						...state.Offer,
 						ViaPoints: [
 							...state.Offer.ViaPoints.map((currValue, index) => {
-								if (index == stopindex) return { ...state.Offer.ViaPoints[stopindex], Place: textContent,Coords:{...coords} };
+								if (index == stopindex)
+									return { ...state.Offer.ViaPoints[stopindex], Place: textContent, Coords: { ...coords } };
 								else return currValue;
 							}),
 						],
-					}
-				}
+					},
+				};
 			});
 		} else if (context == 'Source') {
 			if (isOnBooking) {
 				this.setState((state) => {
 					return {
 						FromResult: <></>,
-						Booking: { ...state.Booking, Source: textContent,SourceCoords:{...coords} }
+						Booking: { ...state.Booking, Source: textContent, SourceCoords: { ...coords } },
 					};
 				});
 			} else {
 				this.setState((state) => {
 					return {
 						FromResult: <></>,
-						Offer: { ...state.Offer, Source: textContent,SourceCoords:{...coords} }
+						Offer: { ...state.Offer, Source: textContent, SourceCoords: { ...coords } },
 					};
 				});
 			}
@@ -295,8 +299,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 				this.setState((state) => {
 					return {
 						ToResult: <></>,
-						Booking: { ...state.Booking, Destination: textContent,	DestinationCoords: { ...coords } },
-					
+						Booking: { ...state.Booking, Destination: textContent, DestinationCoords: { ...coords } },
 					};
 				});
 			else
@@ -390,7 +393,10 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 			return {
 				Offer: {
 					...state.Offer,
-					ViaPoints: [...state.Offer.ViaPoints, { DistanceFromLastPlace: 0, Id: 0, Place: '',Coords:{Lattitude:'',Longitude:''} }],
+					ViaPoints: [
+						...state.Offer.ViaPoints,
+						{ DistanceFromLastPlace: 0, Id: 0, Place: '', Coords: { Lattitude: '', Longitude: '' } },
+					],
 				},
 				ViaPointKeys: [...state.ViaPointKeys, uuid()],
 				ViaPointResult: [...state.ViaPointResult, <></>],
@@ -413,7 +419,6 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 				ViaPointKeys: [...state.ViaPointKeys].filter((item, itemIndex) => {
 					return itemIndex != index;
 				}),
-				
 			};
 		});
 	}
@@ -493,9 +498,10 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 
 		const {
 			Offer: Offer,
-			Offer: { ViaPoints ,SourceCoords,DestinationCoords},
+			Offer: { ViaPoints, SourceCoords, DestinationCoords },
 			IsOnUpdate: IsOnUpdate,
-			Vehicle,User
+			Vehicle,
+			User,
 		} = this.state;
 		const {
 			OfferService,
@@ -518,20 +524,25 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 				const response = await OfferService.GetById(Offer.Id, spHttpClient);
 				oldOffer = { ...response };
 
-				if (JSON.stringify(oldOffer.ViaPoints.map((e) => e.Place)) == JSON.stringify(Offer.ViaPoints.map((e) => e.Place)))
-				shouldCalculateDistance = false;
+				if (
+					JSON.stringify(oldOffer.ViaPoints.map((e) => e.Place)) ==
+					JSON.stringify(Offer.ViaPoints.map((e) => e.Place))
+				)
+					shouldCalculateDistance = false;
 			}
 			if (shouldCalculateDistance) {
-				const ViaPointsCoords: ICoordinateInfo[] = Offer.ViaPoints.map(e => e.Coords);
+				const ViaPointsCoords: ICoordinateInfo[] = Offer.ViaPoints.map((e) => e.Coords);
 				for (var i = 0; i < ViaPointsCoords.length; i++) {
 					if (i == 0) {
-				await	DistanceService.GetDistance(SourceCoords, ViaPointsCoords[i]).then((response) => {
+						await DistanceService.GetDistance(SourceCoords, ViaPointsCoords[i]).then((response) => {
 							Offer.ViaPoints[0].DistanceFromLastPlace = response.Distance;
 						});
 					} else {
-				await		DistanceService.GetDistance(ViaPointsCoords[i - 1], ViaPointsCoords[i]).then((response) => {
-							Offer.ViaPoints[i].DistanceFromLastPlace = response.Distance;
-						});
+						await DistanceService.GetDistance(ViaPointsCoords[i - 1], ViaPointsCoords[i]).then(
+							(response) => {
+								Offer.ViaPoints[i].DistanceFromLastPlace = response.Distance;
+							},
+						);
 					}
 				}
 				await DistanceService.GetDistance(
@@ -548,8 +559,10 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 		if (IsOnUpdate) {
 			try {
 				if (shouldCalculateDistance) {
-					const deleteReponse = await ViaPointService.BatchDelete([...oldOffer.ViaPoints.map((e) => e.Id)], spHttpClient);
-					debugger;
+					const deleteReponse = await ViaPointService.BatchDelete(
+						[...oldOffer.ViaPoints.map((e) => e.Id)],
+						spHttpClient,
+					);
 					deleteReponse.map((e) => {
 						if (!e) {
 							alert('An Unexpected Error Occured.Cannot Delete All ViaPoints');
@@ -557,16 +570,15 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 						}
 					});
 					const response = await ViaPointService.BatchAdd(Offer.ViaPoints, spHttpClient);
-					debugger;
+					
 					Offer.ViaPoints = [...response];
-		
+
 					Offer.ViaPoints.map((e) => {
 						if (!e.Id) {
 							alert('An Unexpected Error Occured.Cannot Add All ViaPoints');
 							throw new Error('Unexpected Error.Cannot Add All ViaPoints.Please Try Again.');
 						}
 					});
-		
 				}
 				const oldVehicle = await VehicleService.GetById(Offer.VehicleId, spHttpClient);
 				if (oldVehicle.NumberPlate != Vehicle.NumberPlate || oldVehicle.Type != Vehicle.Type) {
@@ -588,13 +600,13 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 						throw new Error('Unexpected Error.Cannot Add All ViaPoints.Please Try Again.');
 					}
 				});
-				
+
 				const vehicleResponse = await VehicleService.Create(Vehicle, spHttpClient);
 				Offer.VehicleId = vehicleResponse.Id;
 				Offer.Active = true;
 				Offer.UserId = User.Id;
 				OfferService.Create(Offer, spHttpClient).then((response) => {
-					history.push(GoToPath.Home(parseInt(id)));
+					history.push(GoToPath.Dashboard(parseInt(id)));
 				});
 			} catch (e) {
 				setErrorMessage(true, (e as Error).message);
@@ -606,12 +618,12 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 		const {
 			Booking: { Source, Destination, DateOfBooking: DateTime, SeatsRequired, Time },
 		} = this.state;
-		if (!Source.length) {
+		if (!Source) {
 			validateResult = true;
 			this.setState({ FormMsg: 'Please Enter Source' });
 		} else this.setState({ FormMsg: '' });
 
-		if (!Destination.length) {
+		if (!Destination) {
 			validateResult = true;
 			this.setState({ ToMsg: 'Please Enter Destination' });
 		} else this.setState({ ToMsg: '' });
@@ -620,7 +632,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 			this.setState({ DiscreteEndPointMsg: 'Please Enter Different EndPoints' });
 		else this.setState({ DiscreteEndPointMsg: '' });
 
-		if (!DateTime && !ValidateDate(CoonvertStringDateToObject(DateTime))) {
+		if (DateTime && !ValidateDate(CoonvertStringDateToObject(DateTime))) {
 			validateResult = true;
 			this.setState({ DateMsg: 'Please Enter Valid Date' });
 		} else this.setState({ DateMsg: '' });
@@ -641,24 +653,40 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 
 	async onBookingSubmit(event) {
 		event.preventDefault();
-		if (!this.validateBookingSubmit()) {
-			const {
-				Booking: { Source, Destination, SeatsRequired },
-			} = this.state;
-			const { LocationService, OfferService, spHttpClient, setErrorMessage } = this.props;
-			const BookingRequestInfo: IBookingRequestInfo = {
-				Destination: Destination,
-				SeatsRequired: SeatsRequired,
-				Source: Source,
-			};
-			OfferService.GetByEndPonits(BookingRequestInfo, spHttpClient)
-				.then((response) => {
-					this.setState({ matchOffer: [...response] });
-				})
-				.catch((error) => {
-					setErrorMessage(true, error.message);
-				});
-		}
+		if (this.validateBookingSubmit()) return;
+		const {
+			Booking: { Source, Destination, SeatsRequired,DateOfBooking,Time },
+		} = this.state;
+	
+		const { OfferService, spHttpClient, setErrorMessage,DistanceService ,BookingService} = this.props;
+		const OfferRequestInfo:IOfferRequestInfo= {
+			Date: ConvertToFormatForSPURL(DateOfBooking),
+			SeatsRequired: SeatsRequired,
+			Time:Time
+		};
+		const routes: IOfferRouteAndSeatInfo[] = await OfferService.GetRouteAndSeatsOfferedOfAllActiveOffer(OfferRequestInfo, spHttpClient); 
+		OfferService.setBookingService(BookingService);
+	
+		OfferService.GetByEndPonits(routes,Source,Destination,SeatsRequired, spHttpClient)
+			.then((response) => {
+				OfferService.setBookingService(null);
+				if (response.length) {
+					let offerRequest = [];
+					for (let i = 0; i < response.length; i++) 
+						offerRequest.push(OfferService.GetById(response[i], spHttpClient));
+					Promise.all([...offerRequest]).then(responses => {
+						this.setState({ matchOffer: [...responses] });
+					}).catch(e => {
+						setErrorMessage(true,(e as Error).message);
+					});
+				}
+				else
+					this.setState({ matchOffer: [] });
+		   })
+			.catch((error) => {
+		        OfferService.setBookingService(null);
+				setErrorMessage(true, error.message);
+			});
 	}
 
 	displayOfferRightPanel(event) {
@@ -668,22 +696,13 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 		});
 	}
 	async onInputChange(event) {
-		debugger;
 		const { Toogle } = this.state;
 		const { name, value } = event.target;
 		const { LocationService, history, setErrorMessage } = this.props;
 		if (Toogle) {
-			if (name == 'Source' || name == 'Destination')
-				this.setState((state) => {
-					return {
-						Booking: { ...state.Booking, [name]: { ...state.Booking[name], LocationName: value } },
-					};
-				});
-			else {
 				this.setState((state) => {
 					return { Booking: { ...state.Booking, [name]: value } };
 				});
-			}
 		} else {
 			if (name == 'NumberPlate') {
 				this.setState((state) => {
@@ -714,10 +733,13 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 					alert('GeoLocation Not Supported . . .\nMoving Back');
 					history.goBack();
 				} else if (error instanceof RejectError)
+				{
 					alert('App Will Not Able to Suggest Places.Please ComeBack and Accept');
+				}
 				else {
 					setErrorMessage(true, error.message);
 				}
+				return;
 			}
 			if (name == 'Source') {
 				var addresses = suggestAddress.map((e, index) => (
@@ -794,7 +816,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 			match: {
 				params: { bookingId },
 			},
-		} = this.props;
+		isOnBooking} = this.props;
 		let totalSeats = [];
 		for (let i = 0; i < Vehicle.Capacity - 1; i++) totalSeats.push(i + 1);
 		const currDate: Date = new Date();
@@ -830,7 +852,6 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 								<input
 									type='text'
 									name='Source'
-									required
 									autoComplete='off'
 									placeholder=' '
 									id='from'
@@ -849,7 +870,6 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 								<input
 									type='text'
 									name='Destination'
-									required
 									id='to'
 									placeholder=' '
 									autoComplete='off'
@@ -873,7 +893,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 											onChange={this.onInputChange}
 											className='form-field'
 											name={Toogle ? 'DateOfBooking' : 'StartTime'}
-											value={Offer.StartTime}
+											value={Toogle?Booking.DateOfBooking||'':Offer.StartTime||''}
 										/>
 									</div>
 								</label>
@@ -908,10 +928,10 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 										</label>
 										<input
 											type='text'
-											name='SeatsRequired'
-											disabled={bookingId != undefined ? Booking.Status == BookingStatus.ACCEPTED : false}
-											value={Booking.SeatsRequired == 0 ? '' : Booking.SeatsRequired}
+											name="SeatsRequired"
+											disabled={bookingId && Booking.Status == BookingStatus.ACCEPTED}
 											placeholder=' '
+											value={Booking.SeatsRequired||''}
 											onChange={this.onInputChange}
 										/>
 									</div>
@@ -939,10 +959,10 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 												return { Offer: { ...state.Offer, Discount: parseInt(value) } };
 											});
 										}}
-										>
-											{
-												Object.entries(Discount).map((e)=><option value={e[1]}>{e[0]}</option>)
-											}
+									>
+										{Object.entries(Discount).map((e) => (
+											<option value={e[1]}>{e[0]}</option>
+										))}
 									</select>
 								</div>
 							)}
@@ -1112,7 +1132,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 					)}
 				</form>
 
-				{<Matches {...this.props} Offers={matchOffer} Book={matchOffer == null ? null : Booking} />}
+				{<Matches {...this.props} Offers={matchOffer} Book={!isOnBooking?null:(matchOffer?Booking:null)} />}
 			</div>
 		);
 	}

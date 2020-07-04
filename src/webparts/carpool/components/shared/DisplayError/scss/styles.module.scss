@@ -1,5 +1,8 @@
+@import url('https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css');
 $primary-color:#e1d4d4;
-$bg-color:rgb(232, 125, 125);
+$bg-color:rgb(232,
+125,
+125);
 @keyframes example {
   from {
     background: white;
@@ -30,5 +33,6 @@ $bg-color:rgb(232, 125, 125);
     background-color: #00000075;
     width: 17px;
     height: 18px;
+    color: black;
   }
 }
