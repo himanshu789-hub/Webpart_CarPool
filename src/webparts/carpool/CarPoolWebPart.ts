@@ -17,13 +17,7 @@ export interface ICarPoolWebPartProps {
 }
 
 export default class CarPoolWebPart extends BaseClientSideWebPart <ICarPoolWebPartProps> {
-  public onInit(): Promise<void> {
-    return super.onInit().then(_ => {
-        jQuery("#workbenchPageContent").prop("style", "max-width: none");
-        jQuery(".SPCanvas-canvas").prop("style", "max-width: none");
-        jQuery(".CanvasZone").prop("style", "max-width: none");
-    });
-}
+  
   public render(): void {
     const element: React.ReactElement<ICarPoolProps> = React.createElement(
       CarPool,
@@ -34,7 +28,13 @@ export default class CarPoolWebPart extends BaseClientSideWebPart <ICarPoolWebPa
 
     ReactDom.render(element, this.domElement);
   }
-
+  public onInit(): Promise<void> {
+    return super.onInit().then(_ => {
+        jQuery("#workbenchPageContent").prop("style", "max-width: none");
+        jQuery(".SPCanvas-canvas").prop("style", "max-width: none");
+        jQuery(".CanvasZone").prop("style", "max-width: none");
+    });
+}
   protected onDispose(): void {
     ReactDom.unmountComponentAtNode(this.domElement);
   }

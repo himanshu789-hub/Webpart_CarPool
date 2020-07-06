@@ -8,6 +8,11 @@
   box-sizing: border-box;
 }
 
+.hide {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .nextLocationContent {
   font-style: italic;
   &:before,

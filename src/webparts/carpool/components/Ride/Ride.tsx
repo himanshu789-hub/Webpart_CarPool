@@ -48,6 +48,7 @@ import { IVehicleService } from '../../interface/IVehicleService';
 import { IOfferRouteAndSeatInfo } from '../../interface/IOfferRouteAndSeatInfo';
 import { EBookingResponseKeys } from '../../enum/EBookingResponseKeys';
 import { IOfferRequestInfo } from '../../interface/IOfferRequestInfo';
+import Loading from '../shared/Loading/Loading';
 
 interface TParams {
 	id: string;
@@ -107,6 +108,7 @@ interface IRideState {
 	DiscreteViaPointMsg: string;
 	ViaPointKeys: Array<string>;
 	DiscountMsg: string;
+	IsLoading: boolean;
 }
 
 class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideState> {
@@ -126,6 +128,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 			ToMsg: '',
 			ViaPointMsg: 'Please Enter A Intermidate Point',
 			ShouldValidate: false,
+			IsLoading:false,
 			DateMsg: '',
 			IsOnUpdate: isOnUpdate,
 			Offer: new Offering(),
@@ -458,9 +461,6 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 		if (Offer.Source && Offer.Destination && Offer.Source == Offer.Destination)
 			this.setState({ DiscreteEndPointMsg: 'Please Enter Different EndPoints' });
 		else this.setState({ DiscreteEndPointMsg: '' });
-		if (!Number.isInteger(Offer.Discount)) {
-			this.setState({ DiscountMsg: 'Please Select Discount Options' });
-		} else this.setState({ DiscountMsg: '' });
 		if (!Offer.Time) {
 			validateResult = true;
 			this.setState({ TimeMsg: 'Please Select A Time . . .' });
@@ -495,7 +495,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 	}
 	async onOfferSubmit(event) {
 		event.preventDefault();
-
+		
 		const {
 			Offer: Offer,
 			Offer: { ViaPoints, SourceCoords, DestinationCoords },
@@ -517,6 +517,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 		} = this.props;
 
 		if (this.offerSubmitValidate()) return;
+		this.setState({ IsLoading: true });
 		let oldOffer: IOffering = null;
 		let shouldCalculateDistance: boolean = true;
 		try {
@@ -554,6 +555,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 			}
 		} catch (e) {
 			setErrorMessage(true, (e as Error).message);
+			this.setState({ IsLoading: false });
 		}
 
 		if (IsOnUpdate) {
@@ -565,6 +567,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 					);
 					deleteReponse.map((e) => {
 						if (!e) {
+							this.setState({ IsLoading: false });
 							alert('An Unexpected Error Occured.Cannot Delete All ViaPoints');
 							throw new Error('Unexpected Error.Cannot Delete All ViaPoints.Please Try Again.');
 						}
@@ -575,6 +578,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 
 					Offer.ViaPoints.map((e) => {
 						if (!e.Id) {
+							this.setState({ IsLoading: false });
 							alert('An Unexpected Error Occured.Cannot Add All ViaPoints');
 							throw new Error('Unexpected Error.Cannot Add All ViaPoints.Please Try Again.');
 						}
@@ -585,10 +589,12 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 					const newVehicle = await VehicleService.Update(Vehicle, spHttpClient);
 				}
 				OfferService.Update(Offer, spHttpClient).then((respose) => {
+					this.setState({ IsLoading: false });
 					history.push(GoToPath.Display(parseInt(id)));
 				});
 			} catch (error) {
 				setErrorMessage(true, (error as Error).message);
+				this.setState({ IsLoading: false });
 			}
 		} else {
 			try {
@@ -605,11 +611,13 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 				Offer.VehicleId = vehicleResponse.Id;
 				Offer.Active = true;
 				Offer.UserId = User.Id;
+				Offer.IsRideStarted = false;
 				OfferService.Create(Offer, spHttpClient).then((response) => {
+
 					history.push(GoToPath.Dashboard(parseInt(id)));
 				});
 			} catch (e) {
-				setErrorMessage(true, (e as Error).message);
+				setErrorMessage(true, (e as Error).message);this.setState({ IsLoading: false });
 			}
 		}
 	}
@@ -654,6 +662,8 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 	async onBookingSubmit(event) {
 		event.preventDefault();
 		if (this.validateBookingSubmit()) return;
+		this.setState({ IsLoading: true });
+		
 		const {
 			Booking: { Source, Destination, SeatsRequired,DateOfBooking,Time },
 		} = this.state;
@@ -675,17 +685,20 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 					for (let i = 0; i < response.length; i++) 
 						offerRequest.push(OfferService.GetById(response[i], spHttpClient));
 					Promise.all([...offerRequest]).then(responses => {
+						this.setState({ IsLoading: false });
 						this.setState({ matchOffer: [...responses] });
-					}).catch(e => {
-						setErrorMessage(true,(e as Error).message);
+		        	}).catch(e => {
+						setErrorMessage(true, (e as Error).message);
+						this.setState({ IsLoading: false });
 					});
 				}
 				else
-					this.setState({ matchOffer: [] });
+					this.setState({ matchOffer: [],IsLoading:false });
 		   })
 			.catch((error) => {
 		        OfferService.setBookingService(null);
 				setErrorMessage(true, error.message);
+				this.setState({ IsLoading: false });
 			});
 	}
 
@@ -809,6 +822,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 			DiscountMsg,
 			DiscreteEndPointMsg,
 			matchOffer,
+			IsLoading,
 			DiscreteViaPointMsg,
 		} = this.state;
 
@@ -841,6 +855,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 							</div>
 							<p>we get you the matches asap!</p>
 						</div>
+						<Loading Show={IsLoading} height={20} width={20}/>
 						<label className={styles.default.main_error_msg}>{DiscreteEndPointMsg}</label>
 						<div className={styles.default.rideFormBar}>
 							<div
@@ -859,7 +874,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 									value={Toogle ? Booking.Source || '' : Offer.Source || ''}
 									onChange={this.onInputChange}
 								/>
-								<section className={styles.default.suggestionResult}>{fromResult}</section>
+								<section className={styles.default.suggestionResult+" ".concat(isOnBooking?styles.default.bookingItems:styles.default.offerItems)}>{fromResult}</section>
 							</div>
 							<div
 								className={styles.default.rideFormcontent.concat(' ' + styles.default.positionRelative)}
@@ -876,7 +891,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 									value={Toogle ? Booking.Destination || '' : Offer.Destination || ''}
 									onChange={this.onInputChange}
 								/>
-								<section className={styles.default.suggestionResult}>{toResult}</section>
+								<section className={styles.default.suggestionResult+" ".concat(isOnBooking?styles.default.bookingItems:styles.default.offerItems)}>{toResult}</section>
 							</div>
 							<div className={styles.default.rideFormcontent}>
 								<label>
@@ -956,7 +971,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 										onChange={(event) => {
 											const { value } = event.currentTarget;
 											this.setState((state) => {
-												return { Offer: { ...state.Offer, Discount: parseInt(value) } };
+												return { Offer: { ...state.Offer, Discount: parseFloat(value) } };
 											});
 										}}
 									>
@@ -999,11 +1014,12 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 											type='text'
 											autoComplete='off'
 											className='extras'
+											placeholder=" "
 											name={'_0'}
 											value={ViaPoints[0].Place || ''}
 											onChange={this.onViaPointInput}
 										/>
-										<section className={styles.default.suggestionResult}>{ViaPointResult[0]}</section>
+										<section className={styles.default.suggestionResult+" ".concat(styles.default.offerItems)}>{ViaPointResult[0]}</section>
 									</div>
 									{ViaPoints.map((currentValue, index) => {
 										if (index == 0) return '';
@@ -1028,7 +1044,7 @@ class Ride extends React.Component<IRideProps & IRideDependenciesProps, IRideSta
 													value={currentValue.Place || ''}
 													onChange={this.onViaPointInput}
 												/>
-												<section className={styles.default.suggestionResult}>{ViaPointResult[index]}</section>
+												<section className={styles.default.suggestionResult+" ".concat(styles.default.offerItems)}>{ViaPointResult[index]}</section>
 											</div>
 										);
 									})}

@@ -57,12 +57,15 @@ class BookCard extends React.Component<
   }
 
  async handleCancel(event) {
-    const { Book, SetBookRides, BookingService ,spHttpClient} = this.props;
+    const { Book, SetBookRides, BookingService ,spHttpClient,location,history} = this.props;
     const value: IBookingStatus = {
       BookingId: Book.Id,
       BookingStatus: BookingStatus.CANCEL,
     };
-  await  BookingService.UpdateBookingStatus(value,spHttpClient);
+   await BookingService.UpdateBookingStatus(value, spHttpClient);
+   if (location.pathname.includes("dashboard"))
+     history.push(location.pathname);
+   else
     SetBookRides(true);
   }
 
@@ -84,7 +87,7 @@ class BookCard extends React.Component<
       BookingStatus: BookingStatus.ACCEPTED,
     };
    const offer = await OfferService.GetById(Book.CummuterRef, spHttpClient);
-     OfferService.Update({ ...offer, TotalEarn: offer.TotalEarn + Book.FarePrice }, spHttpClient);
+     OfferService.Update({ ...offer, TotalEarn: (offer.TotalEarn + Book.FarePrice)*(1-offer.Discount) }, spHttpClient);
    await BookingService.UpdateBookingStatus(value,spHttpClient);
     SetBookRides(false);
    

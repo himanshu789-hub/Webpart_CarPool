@@ -4,7 +4,7 @@ import SwitchForm from "./components/SwitchForm/SwitchForm";
 import { GoToPath } from "../../utilities/utilities";
 import { PasswordPattern, EmailPattern } from './locales/regexp';
 import { connect, injectable, inject } from "react-inversify";
-import { ConstUserService } from "../../constant/injection";
+import { ConstUserService, ConstBookingService, ConstOfferService } from "../../constant/injection";
 import * as styles from './scss/styles.module.scss';
 import { IUserService } from "../../interface/IUserService";
 import { IUser } from "../../interface/IUser";
@@ -12,6 +12,9 @@ import { SPHttpClient } from '@microsoft/sp-http';
 import {  RouteComponentProps } from 'react-router-dom';
 import Logo from './../Logo/Logo';
 import * as AppSetting from 'AppSettings';
+import Loading from './../shared/Loading/Loading';
+import { IOfferService } from "../../interface/IOfferService";
+import { IBookingService } from "../../interface/IBookingService";
 interface TParams  {
   id: string;
 }
@@ -23,11 +26,15 @@ interface IFormProps extends RouteComponentProps<TParams> {
 
 interface IFormDependenciesProps {
   UserService: IUserService;
+  BookingService: IBookingService;
+  OfferService: IOfferService;
 }
 
 @injectable()
 class Dependencies {
   @inject(ConstUserService) public readonly UserService: IUserService;
+  @inject(ConstBookingService) public readonly BookingService: IBookingService;
+  @inject(ConstOfferService) public readonly OfferService: IOfferService;
 }
 
 interface IFormState {
@@ -45,7 +52,7 @@ interface IFormState {
   nameMsg: string;
   passwordMsg: string;
   imageMsg: string;
-
+  IsLoading: boolean;
 }
 class Form extends React.Component<
   IFormProps & IFormDependenciesProps,
@@ -79,7 +86,8 @@ class Form extends React.Component<
       passwordMsg: "",
       imageMsg: "",
       ImageName: '',
-      IsImageSelected: false
+      IsImageSelected: false,
+      IsLoading: false
     };
 
     this.OnSumitClick = this.OnSumitClick.bind(this);
@@ -90,19 +98,28 @@ class Form extends React.Component<
     this.HandleDelete = this.HandleDelete.bind(this);
     this.HandleCancel = this.HandleCancel.bind(this);
   }
-  HandleDelete(event) {
+ async HandleDelete(event) {
     event.preventDefault();
-    const { UserService, history,spHttpClient } = this.props;
+    const { UserService, history,spHttpClient,BookingService,OfferService } = this.props;
     const { Id } = this.state.User;
-    
-    UserService.Delete(Id, spHttpClient).then(response => {
-      if (response) history.push("/");
-      else {
-        this.setState({ msg: "Please Try Again To Delete Account" });
+   try
+   {
+    await Promise.all([BookingService.IsUnderBooking(Id, spHttpClient), OfferService.IsUnderOfferring(Id, spHttpClient)]).then(responses => {
+      if (responses[0] || responses[1]) {
+        this.setState({ IsLoading: false, msg: 'Cannot Delete, You are under service' });
+        return;
       }
-    }).catch((error:Error) => {
-      this.setState({ msg: error.message });
-    })
+    });
+     UserService.Delete(Id, spHttpClient).then(response => {
+       if (response) history.push("/");
+       else {
+         this.setState({ msg: "Please Try Again To Delete Account" });
+       }
+     })
+   }
+  catch(error) {
+      this.setState({ msg: (error as Error).message });
+   }
   }
   componentWillReceiveProps(props:IFormProps) {
     if (this.props.IsLogIn != props.IsLogIn)
@@ -251,12 +268,13 @@ class Form extends React.Component<
 
   async OnSumitClick(event) {
     event.preventDefault();
+    this.setState({ IsLoading: true });
     const { IsLogIn, UserService, spHttpClient, history, setErrorMessage } = this.props;
     if (!this.OnSubmitValidate()) return;
     if (IsLogIn) {
       const { EMail: emailId, Password: password } = this.state.User;
       UserService.LogIn(emailId, password,spHttpClient).then(res => {
-        debugger;
+        this.setState({ IsLoading: false });
         if (res) 
           history.push(GoToPath.Dashboard(res.Id));
          else {
@@ -335,7 +353,8 @@ class Form extends React.Component<
       User,
       isOnUpdate,
       showPassword,
-      confirmPassword
+      confirmPassword,
+      IsLoading
     } = this.state;
 
     return (
@@ -432,14 +451,16 @@ class Form extends React.Component<
               </div>
             ) : (
               <></>
-            )}
+              )}
+           
             <div className={styles.default.submitSection}>
               <input
               type='submit'
               className={IsLogIn ? styles.default.logIn : styles.default.signUp}
               value='Submit'
               onClick={this.OnSumitClick}
-            /></div>
+              /> <Loading width={20} height={20} Show={IsLoading}></Loading>
+            </div>
           </form>
           <SwitchForm IsLogIn={IsLogIn} />
         </div>
@@ -454,5 +475,7 @@ export default connect(Dependencies, (deps, ownProps: IFormProps) => ({
   IsLogIn: ownProps.IsLogIn,
   match: ownProps.match,
   location: ownProps.location,
-  setErrorMessage:ownProps.setErrorMessage
+  setErrorMessage:ownProps.setErrorMessage,
+  OfferService: deps.OfferService,
+  BookingService: deps.BookingService
 }))(Form);

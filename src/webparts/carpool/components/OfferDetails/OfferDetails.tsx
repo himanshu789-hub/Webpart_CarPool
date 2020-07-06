@@ -8,7 +8,7 @@ import { IOfferService } from "../../interface/IOfferService";
 import { IUserService } from "../../interface/IUserService";
 import { IOffering } from "../../interface/IOffering";
 import {SPHttpClient } from '@microsoft/sp-http';
-import { RouteComponentProps, withRouter, Redirect } from "react-router";
+import { RouteComponentProps, Redirect } from "react-router";
 import * as styles from './scss/styles.module.scss';
 import { Offering } from "../../model/Offering";
 import { v4 as uuid } from 'uuid';

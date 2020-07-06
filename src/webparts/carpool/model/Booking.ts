@@ -50,7 +50,7 @@ export class Booking implements IBooking{
     Time: string;
   
     @Expose({ name: EBookingResponseKeys.DateOfBooking })
-    @Transform(value => ConvertDateToFormat(new Date(value)))
+    @Transform(value => ConvertDateToFormat(value))
     DateOfBooking: string;
  
     @Expose({ name: EBookingResponseKeys.SeatsRequired })

@@ -1,7 +1,7 @@
 /* tslint:disable */
 require("./Logo.module.css");
 const styles = {
-  logo: 'logo_21abd88f'
+  logo: 'logo_0ce2d416'
 };
 
 export default styles;

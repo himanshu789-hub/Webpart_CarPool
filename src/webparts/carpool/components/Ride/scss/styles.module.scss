@@ -336,6 +336,22 @@ button:hover {
 .suggestionResult {
   position: absolute;
   z-index: 100;
+  width: 100%;
+  background: white;
+}
+
+.bookingItems {
+  span:hover {
+    background: $secondary-color;
+    color: white;
+  }
+}
+
+.offerItems {
+  span:hover {
+    color: white;
+    background: $primary-color;
+  }
 }
 
 .suggestionResult>span {

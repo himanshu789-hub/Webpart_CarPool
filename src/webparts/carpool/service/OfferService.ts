@@ -91,7 +91,7 @@ export class OfferService implements IOfferService {
 	GetAllByUserId = (UserId: number, spHttpClient: SPHttpClient): Promise<IOffering[]> => {
 		const url: string = `${siteURL}/${SelectListInURL(OfferEntitySet)}/items?$select=DriverRefId,IsRideStarted,RoutingEnabled,DestinationPlace,SourcePlace,ViaPointRefs/Id,ViaPointRefs/Place,Time,Date,ViaPointRefs/DistanceFromLastPlace,ViaPointRefs/Coords,Discount,VehicleRefId,DistanceFromLastPlace,PricePerKM,ReachedLocation,Id,Setas_x0020_Offered,TotalEarn,${EofferingResponseKeys.DestinationCoords},${EofferingResponseKeys.SourceCoords}&$expand=ViaPointRefs&$filter=(${
 			EofferingResponseKeys.UserId
-            } eq '${UserId}')`;
+            } eq '${UserId}')&$orderby=Id desc`;
         
         const options: ISPHttpClientOptions = {
             headers: {
@@ -146,7 +146,7 @@ export class OfferService implements IOfferService {
      
     GetRouteAndSeatsOfferedOfAllActiveOffer = (OfferRequestInfo:IOfferRequestInfo,spHttpClient: SPHttpClient): Promise<IOfferRouteAndSeatInfo[]> => {
         
-        const url = `${siteURL}/${SelectListInURL(ListNames.OfferList)}/items?$select=Id,${EofferingResponseKeys.Source},${EofferingResponseKeys.Destination},${EofferingResponseKeys.SeatsOffered},ViaPointRefs/Place&$expand=ViaPointRefs&$filter=(${EofferingResponseKeys.Active} eq '1') and (${EofferingResponseKeys.SeatsOffered} ge '${OfferRequestInfo.SeatsRequired}') and (${EofferingResponseKeys.Date} eq '${OfferRequestInfo.Date}') and (${EofferingResponseKeys.Time} eq '${OfferRequestInfo.Time}')`;
+        const url = `${siteURL}/${SelectListInURL(ListNames.OfferList)}/items?$select=Id,${EofferingResponseKeys.Source},${EofferingResponseKeys.Destination},${EofferingResponseKeys.SeatsOffered},ViaPointRefs/Place&$expand=ViaPointRefs&$filter=(${EofferingResponseKeys.Active} eq '1') and (${EofferingResponseKeys.SeatsOffered} ge '${OfferRequestInfo.SeatsRequired}') and (${EofferingResponseKeys.Date} eq '${OfferRequestInfo.Date}') and (${EofferingResponseKeys.Time} eq '${OfferRequestInfo.Time}')&$orderby=Id desc`;
         const options: ISPHttpClientOptions = {
             headers: {
                 'Accept': 'application/json;odata=nometadata',
@@ -210,7 +210,7 @@ export class OfferService implements IOfferService {
         const url: string = `${siteURL}/${SelectListInURL(OfferEntitySet)}/items`;
         debugger;
         const options: ISPHttpClientOptions = {
-            body: JSON.stringify(MapModelToListItem.MapOfferToListItem({ ...Offer,IsRideStarted:false })),
+            body: JSON.stringify(MapModelToListItem.MapOfferToListItem(Offer)),
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json;odata=nometadata',
@@ -267,7 +267,7 @@ export class OfferService implements IOfferService {
         return OfferIds;
     };
     GetAllOnlyIdByUserId = (UserId: number,Active:boolean ,spHttpClient: SPHttpClient): Promise<number[]> => {
-        const url: string = `${siteURL}/${SelectListInURL(ListNames.OfferList)}/items?$select=Id&$filter=(DriverRefId eq '${UserId}') and (${EofferingResponseKeys.Active} eq ${Active?'1':'0'})`;
+        const url: string = `${siteURL}/${SelectListInURL(ListNames.OfferList)}/items?$select=Id&$filter=(DriverRefId eq '${UserId}') and (${EofferingResponseKeys.Active} eq ${Active?'1':'0'})&$orderby=Id desc`;
         const options: ISPHttpClientOptions = {
             headers: {
                 'Accept': 'application/json;odata=nometadata',

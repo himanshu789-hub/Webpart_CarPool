@@ -13,7 +13,7 @@ export class Offering implements IOffering {
     Destination: string;
     
     @Expose({ name: EofferingResponseKeys.Discount })
-    @Transform(value => value * 100)
+    @Transform(value => value)
     Discount: number;
     
     @Expose({ name: EofferingResponseKeys.Source })
@@ -40,7 +40,7 @@ export class Offering implements IOffering {
     @Expose({ name: EofferingResponseKeys.Active })
     Active: boolean;
     @Expose({ name: EofferingResponseKeys.Date })
-    @Transform(value => ConvertDateToFormat(new Date(value)))
+    @Transform(value => ConvertDateToFormat(value))
     StartTime: string;
     constructor() {
         this.Id = 0;

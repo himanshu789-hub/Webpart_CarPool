@@ -3,10 +3,8 @@
   "id": "c58dd38e-906b-4096-a4fe-aaec1030d01e",
   "alias": "CarPoolWebPart",
   "componentType": "WebPart",
-
   "version": "*",
   "manifestVersion": 2,
-  "requiresCustomScript": true,
   "supportedHosts": ["SharePointWebPart"],
   "supportsFullBleed": true,
   "preconfiguredEntries": [{

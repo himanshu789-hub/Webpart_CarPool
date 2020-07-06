@@ -4,7 +4,7 @@ export enum BookingStatus {
 }
 
 export const Discount =  {
-	ZERO : 0, FIVE : 5, TEN : 10, TWENTY : 20
+	ZERO : 0.00, FIVE : 0.05, TEN : 0.10, TWENTY : 0.20
 }
 
 export const VehicleType = {

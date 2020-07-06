@@ -55,6 +55,7 @@ class OfferCard extends React.Component<IOfferCardProps & IOfferCardDependencies
       Src:''
     };
     this.handleEdit = this.handleEdit.bind(this);
+    this.handleEditOffer = this.handleEditOffer.bind(this);
     this.handleDelete = this.handleDelete.bind(this);
     this.startRide = this.startRide.bind(this);
     this.handleOfferring = this.handleOfferring.bind(this);
@@ -149,6 +150,21 @@ async  startRide() {
       setErrorMessage(true, (e as Error).message);
     });
   }
+async  handleEditOffer()
+  {
+    const {setErrorMessage, Offer, OfferService,BookingService, spHttpClient, history} = this.props;
+    try
+    {
+     if (Offer.IsRideStarted) {
+       this.setState({ Msg: "You Are Under Service Could Not Edit." });
+       return;
+     }
+      history.push(GoToPath.RideOffer(Offer.UserId, Offer.Id));
+    }
+    catch (e) {
+      setErrorMessage(true, (e as Error).message);
+    }
+  }
   render() {
     const { IsOnUpdate: isOnUpdate, Offer } = this.props;
     const { User,Src} = this.state;
@@ -201,7 +217,7 @@ async  startRide() {
           </div>
           <div >
             <p >Discount</p>
-            <p >{Discount}</p>
+            <p >{Math.trunc(Discount * 100)+'%'}</p>
           </div>
           
         </div>
@@ -221,8 +237,10 @@ async  startRide() {
               ) : (
                 <>
                   <button className={styles.default.startRideButton} onClick={this.startRide}>
-                    Start Ride
-                  </button>
+                      Start Ride
+                  </button> <span className={styles.default.msg}>{this.state.Msg}</span>
+                  <label className={styles.default.safe} onClick={this.handleEditOffer}>
+                    <i className='fa fa-edit'></i></label>
                 </>
               )}
             </div>

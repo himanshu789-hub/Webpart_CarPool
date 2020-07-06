@@ -1,17 +1,18 @@
 /* tslint:disable */
 require("./styles.module.css");
 const styles = {
-  offerList: 'offerList_67e87ba4',
-  nextLocationContent: 'nextLocationContent_67e87ba4',
-  heading: 'heading_67e87ba4',
-  moving: 'moving_67e87ba4',
-  currentLocation: 'currentLocation_67e87ba4',
-  offers: 'offers_67e87ba4',
-  buttonLocationUpdate: 'buttonLocationUpdate_67e87ba4',
-  msg_search: 'msg_search_67e87ba4',
-  label: 'label_67e87ba4',
-  msg_earning: 'msg_earning_67e87ba4',
-  msg_reach: 'msg_reach_67e87ba4'
+  offerList: 'offerList_5a3755a8',
+  hide: 'hide_5a3755a8',
+  nextLocationContent: 'nextLocationContent_5a3755a8',
+  heading: 'heading_5a3755a8',
+  moving: 'moving_5a3755a8',
+  currentLocation: 'currentLocation_5a3755a8',
+  offers: 'offers_5a3755a8',
+  buttonLocationUpdate: 'buttonLocationUpdate_5a3755a8',
+  msg_search: 'msg_search_5a3755a8',
+  label: 'label_5a3755a8',
+  msg_earning: 'msg_earning_5a3755a8',
+  msg_reach: 'msg_reach_5a3755a8'
 };
 
 export default styles;

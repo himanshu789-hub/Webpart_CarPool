@@ -38,7 +38,6 @@ export function ValidateDate(inputDate:Date) {
   const currDate: Date = new Date();
   return inputDate >= currDate;
 }
-
 export function CoonvertStringDateToObject(date: string): Date{
   const dateArr: Array<string> = date.split('/');
   const itemDate: Date = new Date(parseInt(dateArr[2]), parseInt(dateArr[1]), parseInt(dateArr[0]));
@@ -86,9 +85,14 @@ export const GoToPath = {
   }
 };
 
-export function ConvertDateToFormat(date: Date) {
-  return date.getDate() + '/' + date.getMonth() + '/' + date.getFullYear();
+function formatting(num: number) {
+  return num < 10 ? '0' + num : num;
 }
+export function ConvertDateToFormat(date: string) {
+  const value = new Date(date+'');
+  return formatting(value.getDate()) +"/"+ formatting((value.getMonth()+1))  +"/"+value.getFullYear();
+}
+
 export const MapModelToListItem = ( function() {
   return {
     MapUserToListItem(User: IUser, UserRefId: number):IUserListItem {
@@ -110,9 +114,9 @@ export const MapModelToListItem = ( function() {
     MapOfferToListItem(Offer: IOffering): IOfferListItem{
       const OfferListItem:IOfferListItem= {
         DestinationPlace: Offer.Destination,
-        Discount: Offer.Discount/100,
+        Discount: Offer.Discount,
         Time: Offer.Time,
-        Date:CoonvertStringDateToObject(Offer.StartTime).toISOString(),
+        Date:ConvertToFormatForSPURL(Offer.StartTime),
         DistanceFromLastPlace: Offer.DistanceFromLastPlace,
         DriverRefId: Offer.UserId,
         PricePerKM: Offer.PricePerKM,
@@ -124,7 +128,8 @@ export const MapModelToListItem = ( function() {
         VehicleRefId: Offer.VehicleId,
         ViaPointRefsId: [...Offer.ViaPoints.map(e => e.Id)],
         DestinationCoords: StringifyCoordinate(Offer.DestinationCoords),
-        SourceCoords: StringifyCoordinate(Offer.SourceCoords)
+        SourceCoords: StringifyCoordinate(Offer.SourceCoords),
+        IsRideStarted:Offer.IsRideStarted
       }
       return OfferListItem;
     },
@@ -138,7 +143,7 @@ export const MapModelToListItem = ( function() {
         TakerRefId:Booking.PassengerRef,
         DestinationCoords: StringifyCoordinate(Booking.DestinationCoords),
         SourceCoords:StringifyCoordinate(Booking.SourceCoords),
-        OData__DCDateCreated: CoonvertStringDateToObject(Booking.DateOfBooking).toISOString(),
+        OData__DCDateCreated: ConvertToFormatForSPURL(Booking.DateOfBooking),
         SeatsRequired:Booking.SeatsRequired
       }
       return BookListItem;

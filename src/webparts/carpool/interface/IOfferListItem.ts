@@ -18,5 +18,6 @@ export interface IOfferListItem{
     [EofferingResponseKeys.Date]: string;
     [EofferingResponseKeys.SourceCoords]: string;
     [EofferingResponseKeys.DestinationCoords]: string;
+    [EofferingResponseKeys.IsRideStarted]: boolean;
 
 }

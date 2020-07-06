@@ -1,17 +1,17 @@
 /* tslint:disable */
 require("./Home.module.css");
 const styles = {
-  container: 'container_06854cda',
-  home: 'home_06854cda',
-  content: 'content_06854cda',
-  info: 'info_06854cda',
-  displayDropDown: 'displayDropDown_06854cda',
-  dropDown: 'dropDown_06854cda',
-  listContainer: 'listContainer_06854cda',
-  list: 'list_06854cda',
-  makeHeightLess: 'makeHeightLess_06854cda',
-  profileImage: 'profileImage_06854cda',
-  blinkingText: 'blinkingText_06854cda'
+  container: 'container_9481ae80',
+  home: 'home_9481ae80',
+  content: 'content_9481ae80',
+  info: 'info_9481ae80',
+  displayDropDown: 'displayDropDown_9481ae80',
+  dropDown: 'dropDown_9481ae80',
+  listContainer: 'listContainer_9481ae80',
+  list: 'list_9481ae80',
+  makeHeightLess: 'makeHeightLess_9481ae80',
+  profileImage: 'profileImage_9481ae80',
+  blinkingText: 'blinkingText_9481ae80'
 };
 
 export default styles;

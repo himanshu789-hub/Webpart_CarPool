@@ -37,13 +37,21 @@
   color: $primary-text-color;
 }
 
+@mixin center-text() {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  position: absolute;
+  text-align: center;
+}
+
 .bookingPlane {
   @include position-base();
   @include box-plane();
   background-color: $secondary-color;
   a {
     @extend %plane-link-style;
-    @include center-content();
+    @include center-text();
     @include link-style();
   }
 }
@@ -63,7 +71,7 @@
   background-color: $primary-color;
   margin-left: 14px;
   a {
-    @include center-content();
+    @include center-text();
     @include link-style();
     @extend %plane-link-style;
   }
